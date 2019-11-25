@@ -17,8 +17,9 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
 
+import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CLOSING;
 import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CONNECTED;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_DISCONNECTING;
+import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_VERIFICATION;
 import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_VERIFIED_CONNECTION;
 
 public class ConnectedThread extends Thread {
@@ -29,6 +30,7 @@ public class ConnectedThread extends Thread {
     private final InputStream mmInStream;
     private final OutputStream mmOutStream;
     private final Handler handler;
+    private volatile boolean receivedResponse;
 
     public ConnectedThread(BluetoothSocket socket, Handler handler) {
         Log.d(TAG, "new ConnectedThread");
@@ -53,8 +55,6 @@ public class ConnectedThread extends Thread {
 
         mmInStream = tmpIn;
         mmOutStream = tmpOut;
-        BluetoothConnectionService.mState = STATE_CONNECTED;
-        bluetoothController.onState(STATE_CONNECTED, mmSocket.getRemoteDevice());
     }
 
     @Override
@@ -64,32 +64,34 @@ public class ConnectedThread extends Thread {
         int numBytes; // bytes returned from read()
 
         // Keep listening to the InputStream until an exception occurs.
-        while (BluetoothConnectionService.mState == STATE_CONNECTED) {
+        while (bluetoothController.getBluetoothConnectionService().getState() == STATE_CONNECTED || bluetoothController.getBluetoothConnectionService().getState() == STATE_VERIFICATION || bluetoothController.getBluetoothConnectionService().getState() == STATE_VERIFIED_CONNECTION) {
             try {
                 // Read from the InputStream.
+                if (bluetoothController.getBluetoothConnectionService().getState() == STATE_CONNECTED)
+                    bluetoothController.getBluetoothConnectionService().setState(STATE_VERIFICATION);
+
                 numBytes = mmInStream.read(buffer);
-                checkForRequest(buffer, numBytes);
+                if (checkForRequest(buffer, numBytes))
+                    receivedAResponse();
                 // Send the obtained bytes to the UI activity.
                 //Message readMsg = handler.obtainMessage(BluetoothConstants.MESSAGE_READ, numBytes, -1, buffer);
                 //readMsg.sendToTarget();
             } catch (IOException e) {
-                if (BluetoothConnectionService.mState == STATE_DISCONNECTING) {
-                    // all good, do nothing (unfortunately exception is thrown because read is a blocking call
-                    Log.d(TAG, "run: input stream was closed, stop reading");
-                    break;
-                } else {
-                    Log.d(TAG, "run: input stream was disconnected", e);
-                    //e.printStackTrace();
-                    //bluetoothController.getBluetoothConnectionService().connectionLost();
-                    break;
-                }
+                Log.d(TAG, "run: input stream was disconnected or closed");
+                // thread was closed without a request to the other device, or an exception occurred
+                bluetoothController.getBluetoothConnectionService().onThreadClosed(BluetoothConstants.CONNECTED_THREAD);
+                bluetoothController.getBluetoothConnectionService().setState(BluetoothConstants.STATE_INTERRUPTED);
+                // break is done indirectly through setState
+                //e.printStackTrace();
+                //bluetoothController.getBluetoothConnectionService().connectionLost();
+                //break;
             }
         }
     }
 
     private boolean checkForRequest (byte[] buffer, int numBytes) {
         String received = new String(Arrays.copyOfRange(buffer, 0, numBytes));
-        if (BluetoothConnectionService.connectRequestReceived) {
+        /*if (BluetoothConnectionService.connectRequestReceived) {
             // since this is the number thread is waiting for, reset connectRequestReceived
             BluetoothConnectionService.connectRequestReceived = false;
             // next message is a number
@@ -107,22 +109,23 @@ public class ConnectedThread extends Thread {
                 bluetoothController.getBluetoothConnectionService().useConnection(this);
             }
             return true;
-        }
+        }*/
 
         switch (received) {
             case BluetoothConstants.REQUEST_CLOSE_CONNECTION:
                 Log.d(TAG, "checkForRequest: close connection was requested");
                 Log.d(TAG, "checkForRequest: immediately confirm close connection");
-                write(BluetoothConstants.CONFIRMED_CLOSE_CONNECTION.getBytes());
+                //write(BluetoothConstants.CONFIRMED_CLOSE_CONNECTION.getBytes());
+                bluetoothController.getBluetoothConnectionService().request(BluetoothConstants.CONFIRMED_CLOSE_CONNECTION);
                 return true;
             case BluetoothConstants.CONFIRMED_CLOSE_CONNECTION:
                 Log.d(TAG, "checkForRequest: close connection was confirmed");
                 write(BluetoothConstants.CLOSE_CONNECTION.getBytes());
-                bluetoothController.stopConnection(true);
+                bluetoothController.getBluetoothConnectionService().setState(STATE_CLOSING);
                 return true;
             case BluetoothConstants.CLOSE_CONNECTION:
                 Log.d(TAG, "checkForRequest: close connection was confirmed");
-                bluetoothController.stopConnection(true);
+                bluetoothController.getBluetoothConnectionService().setState(STATE_CLOSING);
                 return true;
             case BluetoothConstants.REQUEST_CONNECT:
                 Log.d(TAG, "checkForRequest: connect request received");
@@ -135,7 +138,7 @@ public class ConnectedThread extends Thread {
                 Log.d(TAG, "checkForRequest: roll: " + BluetoothConnectionService.roll);
                 byte[] bytes = ByteBuffer.allocate(4).putInt(BluetoothConnectionService.roll).array();
                 write(bytes);
-                break;
+                return true;
             case BluetoothConstants.CONFIRMED_CONNECT_REQUEST:
                 Log.d(TAG, "checkForRequest: connect request was confirmed");
                 BluetoothConnectionService.connectRequestReceived = true;
@@ -144,24 +147,24 @@ public class ConnectedThread extends Thread {
                 Log.d(TAG, "checkForRequest: roll: " + BluetoothConnectionService.roll);
                 bytes = ByteBuffer.allocate(4).putInt(BluetoothConnectionService.roll).array();
                 write(bytes);
-                break;
+                return true;
                 //TODO reset roll after successful connection
             case BluetoothConstants.REQUEST_ESTABLISHED_CONNECTION:
                 Log.d(TAG, "checkForRequest: established connection was requested");
                 Log.d(TAG, "checkForRequest: immediately confirm established connection");
                 write(BluetoothConstants.CONFIRMED_ESTABLISHED_CONNECTION.getBytes());
-                BluetoothConnectionService.mState = STATE_VERIFIED_CONNECTION;
-                break;
+                //bluetoothController.getBluetoothConnectionService().request(BluetoothConstants.CONFIRMED_ESTABLISHED_CONNECTION);
+                return true;
             case BluetoothConstants.CONFIRMED_ESTABLISHED_CONNECTION:
                 Log.d(TAG, "checkForRequest: established connection was confirmed");
-                BluetoothConnectionService.mState = STATE_VERIFIED_CONNECTION;
-                break;
+                bluetoothController.getBluetoothConnectionService().setState(STATE_VERIFIED_CONNECTION);
+                bluetoothController.onState(STATE_CONNECTED, mmSocket.getRemoteDevice());
+                return true;
             default:
                 return false;
 
         }
-        return false;
-    } // TODO: request closed --> wenn keine antwort closen
+    }
     // TODO: request() method
 /*
     private void request(String request) {
@@ -178,16 +181,16 @@ public class ConnectedThread extends Thread {
                     //BluetoothConstants.MESSAGE_WRITE, -1, -1, buffer);
             //writtenMsg.sendToTarget();
         } catch (IOException e) {
-            Log.e(TAG, "write: exception during write", e);
+            Log.d(TAG, "write: exception during write");
 
             // Send a failure message back to the activity.
-            Message writeErrorMsg =
-                    handler.obtainMessage(BluetoothConstants.MESSAGE_TOAST);
-            Bundle bundle = new Bundle();
-            bundle.putString("toast",
-                    "couldn't send data to the other device");
-            writeErrorMsg.setData(bundle);
-            handler.sendMessage(writeErrorMsg);
+            //Message writeErrorMsg =
+                    //handler.obtainMessage(BluetoothConstants.MESSAGE_TOAST);
+            //Bundle bundle = new Bundle();
+            //bundle.putString("toast",
+                    //"couldn't send data to the other device");
+            //writeErrorMsg.setData(bundle);
+            //handler.sendMessage(writeErrorMsg);
         }
     }
 
@@ -195,13 +198,28 @@ public class ConnectedThread extends Thread {
     public void cancel() {
         try {
             Log.d(TAG, "cancel: close socket and streams");
-            BluetoothConnectionService.mState = BluetoothConstants.STATE_DISCONNECTING;
             mmSocket.close();
             mmInStream.close();
             mmOutStream.close();
-            BluetoothConnectionService.mState = BluetoothConstants.STATE_NONE;
+            if (bluetoothController.getBluetoothConnectionService().getState() == STATE_CLOSING) {
+                // everything normal, thread is closed, the loop already finished
+                bluetoothController.getBluetoothConnectionService().onThreadClosed(BluetoothConstants.CONNECTED_THREAD);
+            }
         } catch (IOException e) {
-            Log.e(TAG, "cancel: could not close the connect socket", e);
+            Log.d(TAG, "cancel: could not close the connect socket", e);
         }
+    }
+
+    private synchronized void receivedAResponse() {
+        receivedResponse = true;
+        bluetoothController.getBluetoothConnectionService().notifyAll();
+    }
+
+    public synchronized boolean gotResponse() {
+        return receivedResponse;
+    }
+
+    public synchronized void newRequest() {
+        receivedResponse = false;
     }
 }

@@ -17,6 +17,8 @@ import java.util.UUID;
 
 import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CONNECTED;
 import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CONNECTING;
+import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CONNECTING_VIA_SERVER;
+import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_LISTEN;
 
 // https://developer.android.com/guide/topics/connectivity/bluetooth#java
 public class ConnectThread extends Thread {
@@ -42,10 +44,9 @@ public class ConnectThread extends Thread {
             // MY_UUID is the app's UUID string, also used in the server code.
             tmp = device.createInsecureRfcommSocketToServiceRecord(UUID.fromString(BluetoothConstants.UUID));
         } catch (IOException e) {
-            Log.e(TAG, "ConnectThread: socket's create() method failed", e);
+            Log.d(TAG, "ConnectThread: socket's create() method failed", e);
         }
         mmSocket = tmp;
-        BluetoothConnectionService.mState = STATE_CONNECTING;
     }
 
     public void run() {
@@ -53,20 +54,36 @@ public class ConnectThread extends Thread {
         // Cancel discovery because it otherwise slows down the connection.
         bluetoothAdapter.cancelDiscovery();
 
-        try {
-            // Connect to the remote device through the socket. This call blocks
-            // until it succeeds or throws an exception.
-
-            // READ RETURN -1 bt socket is closed because cancel is being called right after connection is made and socket was returned
-            mmSocket.connect();
-            Log.d(TAG, "run: ConnectThread connected");
-            bluetoothController.getBluetoothConnectionService().startCommunication(mmSocket, false);
-        } catch (IOException connectException) {
-            Log.d(TAG, "run: exception during connecting");
-            bluetoothController.getBluetoothConnectionService().connectionFailed(mmDevice);
-            //connectException.printStackTrace();
-            return;
+        if (bluetoothController.getBluetoothConnectionService().getState() != STATE_CONNECTING_VIA_SERVER) {
+            // only use this, if accept thread has not been connected yet
+            if (bluetoothController.getBluetoothConnectionService().getState() != STATE_LISTEN)
+                Log.d(TAG, "ERROR: should be listening");
+            try {
+                mmSocket.connect();
+                Log.d(TAG, "run: ConnectThread connected");
+                if (bluetoothController.getBluetoothConnectionService().getState() == STATE_LISTEN) {
+                    // only establish connection over connectThread, if accept thread has not connected yet
+                    bluetoothController.getBluetoothConnectionService().setConnectionSocket(mmSocket);
+                    bluetoothController.getBluetoothConnectionService().setState(STATE_CONNECTING);
+                } else {
+                    Log.d(TAG, "run: connectThread ignored");
+                }
+            } catch (IOException e) {
+                if (bluetoothController.getBluetoothConnectionService().getState() == STATE_LISTEN) {
+                    Log.d(TAG, "run: exception during connecting");
+                    // the other device is not available
+                    //bluetoothController.getBluetoothConnectionService().connectionFailed(mmDevice);
+                    bluetoothController.getBluetoothConnectionService().setState(BluetoothConstants.STATE_UNABLE_TO_CONNECT);
+                } else {
+                    // thread was closed, since .connect() is blocking --> exception is thrown
+                    bluetoothController.getBluetoothConnectionService().onThreadClosed(BluetoothConstants.CONNECT_THREAD);
+                }
+            }
+        } else {
+            // accept thread already connecting
+            Log.d(TAG, "connectThread not needed");
         }
+
 
         // Reset the ConnectThread because we're done
         /*synchronized (bluetoothController.getBluetoothConnectionService()) {
@@ -77,11 +94,13 @@ public class ConnectThread extends Thread {
     // Closes the client socket and causes the thread to finish.
     public void cancel() {
         try {
-            // only close if not in use
-            if (!mmSocket.isConnected())
-                mmSocket.close();
+            mmSocket.close();
+            if (bluetoothController.getBluetoothConnectionService().getState() == BluetoothConstants.STATE_CLOSING || bluetoothController.getBluetoothConnectionService().getState() == BluetoothConstants.STATE_CONNECTING_VIA_SERVER)
+                // if connection was established over the connectThread, then stays open until connection is closed (because of the socket)
+                // or if connection was established via the acceptThread, but connectThread returned a socket as well (but was ignored)
+                bluetoothController.getBluetoothConnectionService().onThreadClosed(BluetoothConstants.CONNECT_THREAD);
         } catch (IOException e) {
-            Log.e(TAG, "cancel: could not close the client socket", e);
+            Log.d(TAG, "cancel: could not close the client socket", e);
         }
     }
 

@@ -85,7 +85,7 @@ public class BluetoothActivity extends AppCompatActivity implements AdapterView.
         } else {
             // should disconnect
             Log.d(TAG, "onClick: \"Disconnect\" terminate connection");
-            bluetoothController.stopConnection(false);
+            bluetoothController.stopConnection();
         }
     }
 

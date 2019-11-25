@@ -40,69 +40,46 @@ public class AcceptThread extends Thread {
             // MY_UUID is the app's UUID string, also used by the client code.
             tmp = bluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(NAME, UUID.fromString(BluetoothConstants.UUID)); //COMMENT:INSECURE? NO!
         } catch (IOException e) {
-            Log.e(TAG, "AcceptThread: socket's listen() method failed", e);
+            Log.d(TAG, "AcceptThread: socket's listen() method failed", e);
         }
         mmServerSocket = tmp;
-        BluetoothConnectionService.mState = STATE_LISTEN;
     }
 
     @Override
     public void run() {
         BluetoothSocket socket = null;
-        // Keep listening until exception occurs or a socket is returned.
-        while (BluetoothConnectionService.mState != STATE_CONNECTED) {
-            try {
-                socket = mmServerSocket.accept();
-                Log.d(TAG, "run: socket accepted");
-            } catch (IOException e) {
-                Log.e(TAG, "run: socket's accept() method failed", e);
-                break;
+        try {
+            bluetoothController.getBluetoothConnectionService().setState(STATE_LISTEN);
+            socket = mmServerSocket.accept();
+            Log.d(TAG, "run: socket accepted");
+            if (bluetoothController.getBluetoothConnectionService().getState() == STATE_LISTEN) {
+                // only establish connection over acceptThread, if connectThread has not connected yet
+                bluetoothController.getBluetoothConnectionService().setConnectionSocket(socket);
+                bluetoothController.getBluetoothConnectionService().setState(BluetoothConstants.STATE_CONNECTING_VIA_SERVER);
+            } else {
+                Log.d(TAG, "run: acceptThread ignored");
+            }
+        } catch (IOException e) {
+            if (bluetoothController.getBluetoothConnectionService().getState() == STATE_LISTEN) {
+                Log.d(TAG, "run: socket's accept() method failed");
+                bluetoothController.getBluetoothConnectionService().setState(BluetoothConstants.STATE_FAILED);
+            } else {
+                // thread was closed because connectThread returned socket and acceptThread didn't
+                // since accept() is blocking --> exception is thrown
+                bluetoothController.getBluetoothConnectionService().onThreadClosed(BluetoothConstants.ACCEPT_THREAD);
             }
 
-            if (socket != null) {
-                synchronized (bluetoothController.getBluetoothConnectionService()) {
-                    switch (BluetoothConnectionService.mState) {
-                        case STATE_LISTEN:
-                            // Situation normal. Start the connected thread.
-                            bluetoothController.getBluetoothConnectionService().startCommunication(socket, true);
-                            break;
-                        case STATE_CONNECTING:
-                        case STATE_CONNECTED:
-                            Log.d(TAG, "run: already in CONNECTING state");
-                            bluetoothController.getBluetoothConnectionService().saveDuplicateConnection(socket);
-                            //cancel();
-                            break;
-                        /*case STATE_CONNECTED:
-                            Log.d(TAG, "run: already connected --> cancel this");
-                            try {
-                                socket.close();
-                            } catch (IOException e) {
-                                Log.e(TAG, "Could not close unwanted socket", e);
-                            }
-                            cancel();
-                            break;*/
-                        case STATE_NONE:
-                            Log.d(TAG, "run: oups something went wrong --> cancel");
-                            try {
-                                socket.close();
-                            } catch (IOException e) {
-                                Log.e(TAG, "Could not close unwanted socket", e);
-                            }
-                            cancel();
-                            break;
-                    }
-                }
-                // A connection was accepted. Perform work associated with
-                // the connection in a separate thread.
-            }
         }
-        Log.i(TAG, "END acceptThread");
     }
 
     // Closes the connect socket and causes the thread to finish.
     public void cancel() {
         try {
             mmServerSocket.close();
+            if (bluetoothController.getBluetoothConnectionService().getState() == BluetoothConstants.STATE_CONNECTING_VIA_SERVER || bluetoothController.getBluetoothConnectionService().getState() == BluetoothConstants.STATE_CONNECTING) {
+                // this thread is being closed because accept() already returned or accept was ignored
+                bluetoothController.getBluetoothConnectionService().onThreadClosed(BluetoothConstants.ACCEPT_THREAD);
+            }
         } catch (IOException e) {
             Log.e(TAG, "cancel: could not close the connect socket", e);
         }

@@ -11,14 +11,25 @@ import com.mobileanwendungen.drawingapp.bluetooth.Threads.AcceptThread;
 import com.mobileanwendungen.drawingapp.bluetooth.Threads.ConnectThread;
 import com.mobileanwendungen.drawingapp.bluetooth.Threads.ConnectedThread;
 
+import java.sql.Time;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_DISCONNECTING;
+import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CLOSED;
+import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CLOSE_REQUEST;
+import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CLOSING;
+import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CONNECTING_VIA_SERVER;
+import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_FAILED;
+import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_INTERRUPTED;
 import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_LISTEN;
 import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_NONE;
 import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CONNECTING;
 import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CONNECTED;
+import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_RESTARTING;
+import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_TIMEOUT;
+import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_UNABLE_TO_CONNECT;
+import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_VERIFICATION;
+import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_VERIFIED_CONNECTION;
 
 public class BluetoothConnectionService {
     public static final String TAG = "cust.BTConnectService";
@@ -26,351 +37,343 @@ public class BluetoothConnectionService {
     private BluetoothAdapter bluetoothAdapter;
     private Handler handler; // handler that gets info from Bluetooth service
 
-    private ConnectedThread connectedThread;
+    private volatile ConnectedThread connectedThread;
     private ConnectedThread backupThread;
-    private ConnectThread connectThread;
-    private AcceptThread acceptThread;
-    public static int mState;
+    private volatile ConnectThread connectThread;
+    private volatile AcceptThread acceptThread;
+    private volatile int mState;
+    private BluetoothSocket connectionSocket;
     private BluetoothSocket duplicateConnection;
     public static boolean connectRequestReceived;
     public static int roll;
+    private BluetoothDevice remoteDevice;
+
+    public synchronized void setConnectionSocket(BluetoothSocket socket) {
+        connectionSocket = socket;
+    }
+
+    public synchronized void setState(int state) {
+        String name;
+        switch (state) {
+            case STATE_NONE:
+                name = "STATE_NONE";
+                break;
+            case STATE_LISTEN:
+                name = "STATE_LISTEN";
+                break;
+            case STATE_CONNECTING:
+                name = "STATE_CONNECTING";
+                break;
+            case STATE_CONNECTED:
+                name = "STATE_CONNECTED";
+                break;
+            case STATE_VERIFIED_CONNECTION:
+                name = "STATE_VERIFIED_CONNECTION";
+                break;
+            case STATE_FAILED:
+                name = "STATE_FAILED";
+                break;
+            case STATE_UNABLE_TO_CONNECT:
+                name = "STATE_UNABLE_TO_CONNECT";
+                break;
+            case STATE_CONNECTING_VIA_SERVER:
+                name = "STATE_CONNECTING_VIA_SERVER";
+                break;
+            case STATE_INTERRUPTED:
+                name = "STATE_INTERRUPTED";
+                break;
+            case STATE_VERIFICATION:
+                name = "STATE_VERIFICATION";
+                break;
+            case STATE_CLOSING:
+                name = "STATE_CLOSING";
+                break;
+            case STATE_CLOSED:
+                name = "STATE_CLOSED";
+                break;
+            case STATE_CLOSE_REQUEST:
+                name = "STATE_CLOSE_REQUEST";
+                break;
+            case STATE_RESTARTING:
+                name = "STATE_RESTARTING";
+                break;
+            case STATE_TIMEOUT:
+                name = "STATE_TIMEOUT";
+                break;
+            default:
+                name = "STATE NOT FOUND";
+        }
+        Log.d(TAG, "mState = " + name);
+        mState = state;
+        onStateChanged();
+    }
+
+    public synchronized int getState() {
+        return mState;
+    }
+
+    public synchronized void onStateChanged () {
+        switch (mState) {
+            case STATE_NONE:
+                // start listening
+                acceptThread = new AcceptThread(bluetoothAdapter);
+                acceptThread.start();
+                break;
+            case STATE_LISTEN:
+                this.notifyAll();
+                break;
+            case STATE_CONNECTING:
+                if (connectionSocket == null)
+                    Log.e(TAG, "ERROR");
+                stopAcceptThread();
+                startCommunication(connectionSocket);
+                break;
+            case STATE_CONNECTING_VIA_SERVER:
+                if (connectionSocket == null)
+                    Log.e(TAG, "ERROR");
+                stopAcceptThread();
+                if (connectThread != null)
+                    stopConnectThread();
+                startCommunication(connectionSocket);
+                break;
+            case STATE_CONNECTED:
+                connectedThread.start();
+                break;
+            case STATE_VERIFICATION:
+                Log.d(TAG, "request established connection");
+                write(BluetoothConstants.REQUEST_ESTABLISHED_CONNECTION.getBytes());
+                break;
+            case STATE_VERIFIED_CONNECTION:
+                Log.d(TAG, "running...");
+                break;
+            case STATE_FAILED:
+                Log.d(TAG, "ERROR: FAILED");
+                setState(STATE_RESTARTING);
+                break;
+            case STATE_UNABLE_TO_CONNECT:
+                Log.d(TAG, "other device is not available");
+                // do nothing, keep listening
+                setState(STATE_LISTEN);
+                break;
+            case STATE_INTERRUPTED:
+                // TODO: testen
+                Log.d(TAG, "ERROR: connection interrupted");
+                setState(STATE_RESTARTING);
+                break;
+            case STATE_TIMEOUT:
+                Log.d(TAG, "timeout");
+                setState(STATE_RESTARTING);
+            case STATE_CLOSE_REQUEST:
+                Log.d(TAG, "request close connection");
+                request(BluetoothConstants.REQUEST_CLOSE_CONNECTION);
+                break;
+            case STATE_CLOSING:
+                closeAll();
+                break;
+            case STATE_CLOSED:
+                BluetoothController.getBluetoothController().onConnectionClosed();
+                Log.d(TAG, "-----------------------------------------------------------------");
+                break;
+            case STATE_RESTARTING:
+                closeAll();
+                restartConnection();
+                break;
+            default:
+                Log.e(TAG, "STATE NOT FOUND");
+        }
+    }
 
 
     public BluetoothConnectionService() {
         Log.d(TAG, "new BTConnectionService");
         handler = new MyHandler();
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        mState = STATE_NONE;
+        setState(STATE_NONE);
     }
 
-    //acceptDevice
-    public synchronized void startListening() {
-        Log.d(TAG, "startListening");
-
-        if (connectThread != null) {
-            Log.d(TAG, "startListening: canceled connect thread");
-            connectThread.cancel();
-            connectThread = null;
-        }
-
-        // Cancel any thread currently running a connection
-        if (connectedThread != null) {
-            Log.d(TAG, "startListening: canceled connected thread");
-            connectedThread.cancel();
-            connectedThread = null;
-        }
-
-        if (acceptThread == null) {
-            Log.d(TAG, "startListening: started accept thread");
-            acceptThread = new AcceptThread(bluetoothAdapter);
-            acceptThread.start();
-        } else {
-            Log.d(TAG, "startListening: accept thread already running");
-            mState = STATE_LISTEN;
-        }
-    }
 
     public synchronized void connectTo(BluetoothDevice device) {
-
-        if (/*mState == STATE_CONNECTING && */connectThread != null) {
-            Log.d(TAG, "connectTo: canceled connect thread");
-            connectThread.cancel();
-            connectThread = null;
-        }
-
-        // Cancel any thread currently running a connection
-        if (connectedThread != null) {
-            Log.d(TAG, "connectTo: canceled connected thread");
-            connectedThread.cancel();
-            connectedThread = null;
-        }
-
         connectThread = new ConnectThread(device, bluetoothAdapter);
         connectThread.start();
     }
 
+    public synchronized void stopConnectThread() {
+        connectThread.cancel();
+        while (connectThread != null) {
+            try {
+                this.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        Log.d(TAG, "connect thread closed");
+    }
+    public synchronized void stopAcceptThread() {
+        acceptThread.cancel();
+        while (acceptThread != null) {
+            try {
+                this.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        Log.d(TAG, "accept thread closed");
+    }
+    public synchronized void stopConnectedThread() {
+        connectedThread.cancel();
+        while (connectedThread != null) {
+            try {
+                this.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        Log.d(TAG, "connected thread closed");
+    }
 
-    public synchronized void startCommunication(BluetoothSocket socket, boolean viaServerSocket) {
-        mState = STATE_CONNECTING;
+
+    public synchronized void startCommunication(BluetoothSocket socket) {
+        if (remoteDevice == socket.getRemoteDevice()) {
+            // this is the second try (RESTARTING)
+            remoteDevice = null;
+        } else {
+            // first try, remember remote device in case something goes wrong
+            remoteDevice = socket.getRemoteDevice();
+        }
         Log.d(TAG, "startCommunication");
-
-        if (connectThread != null) {
-            // if started via server --> cancel connectThread (if both users click "Connect" simultaneously,
-            // then the socket of the connectThread can still connect to another application which will cause an error)
-            if (viaServerSocket) // just for readability... cancel doesn't close the socket if it is use
-            {
-                Log.d(TAG, "startCommunication: connection via server socket --> canceled connect thread");
-                connectThread.cancel();
-            }
-            connectThread = null;
-        }
-/*
-        // Cancel any thread currently running a connection
-        if (connectedThread != null) {
-            Log.d(TAG, "startCommunication: canceled connected thread");
-            connectedThread.cancel();
-            connectedThread = null;
-        }
-*/
-        if (acceptThread != null) {
-            Log.d(TAG, "startCommunication: canceled accept thread");
-            acceptThread.cancel();
-            acceptThread = null;
-        }
-
-        Log.d(TAG, "startCommunication: connected thread");
         connectedThread = new ConnectedThread(socket, handler);
-        connectedThread.start();
-        // wait for connectedThread to start
-        try {
-            Log.d(TAG, "startCommunication: wait for connectedThread");
-            TimeUnit.MILLISECONDS.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        Log.d(TAG, "startCommunication: request verified connection");
-        write(BluetoothConstants.REQUEST_ESTABLISHED_CONNECTION.getBytes());
-        while (mState != BluetoothConstants.STATE_VERIFIED_CONNECTION) {
-            try {
-                Log.d(TAG, "startCommunication: wait for verified connection");
-                TimeUnit.MILLISECONDS.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        // Send the name of the connected device back to the UI Activity
+        setState(STATE_CONNECTED);
     }
 
-    public synchronized void saveDuplicateConnection(BluetoothSocket socket) {
-        Log.d(TAG, "saveDuplicateConnection: remember duplicate connection");
-        duplicateConnection = socket;
+    public synchronized void closeAll() {
+        Log.d(TAG, "closeAll: ");
+
         if (connectedThread != null) {
-            Log.d(TAG, "saveDuplicateConnection: cancel connected thread");
-            connectedThread.cancel();
+            stopConnectedThread();
         }
 
-        while (mState == STATE_DISCONNECTING) {
-            try {
-                Log.d(TAG, "saveDuplicateConnection: wait for cancel");
-                TimeUnit.MILLISECONDS.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        connectedThread = new ConnectedThread(duplicateConnection, handler);
-        connectedThread.start();
-        // wait for connectedThread to start
-        try {
-            Log.d(TAG, "saveDuplicateConnection: wait for connectedThread");
-            TimeUnit.MILLISECONDS.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        Log.d(TAG, "saveDuplicateConnection: request verified connection");
-        write(BluetoothConstants.REQUEST_ESTABLISHED_CONNECTION.getBytes());
-        while (mState != BluetoothConstants.STATE_VERIFIED_CONNECTION) {
-            try {
-                Log.d(TAG, "saveDuplicateConnection: wait for verified connection");
-                TimeUnit.MILLISECONDS.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        //Log.d(TAG, "saveDuplicateConnection: request established connection"); // THIS WORKS !=!=!=!=!=:D:SD:SD:SD:SD
-
-        /*backupThread = new ConnectedThread(duplicateConnection, handler);
-        backupThread.start();
-        try {
-            Random random = new Random();
-            int timeout = random.nextInt(3000);
-            Log.d(TAG, "saveDuplicateConnection: wait for some time: " + timeout);
-
-            // TODO: both waiting equally long??
-            TimeUnit.MILLISECONDS.sleep(timeout);
-            //Toast.makeText(BluetoothController.getBluetoothController)
-            // ===============================
-            // second try ?????????????????????
-            while(connectedThread == null || backupThread == null) {
-                TimeUnit.MILLISECONDS.sleep(500);
-                Log.d(TAG, "Sleep");
-            }
-            random = new Random();
-            timeout = random.nextInt(3000);
-            Log.d(TAG, "saveDuplicateConnection: wait for some time: " + timeout);
-            TimeUnit.MILLISECONDS.sleep(timeout);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        Log.d(TAG, "saveDuplicateConnection: finished sleep, roll: " + roll + " --> don't send connect request");
-        if (roll == 0) {
-            Log.d(TAG, "saveDuplicateConnection: request connect");
-            write(BluetoothConstants.REQUEST_CONNECT.getBytes(), true);
-        }*/
-    }
-
-    /**
-     * Disconnect and start listening again.
-     */
-    public synchronized void disconnect() {
-        Log.d(TAG, "disconnect: ");
-
-        mState = STATE_DISCONNECTING;
         if (connectThread != null) {
-            connectThread.cancel();
-            connectThread = null;
-        }
-
-        if (connectedThread != null) {
-            Log.d(TAG, "disconnect: terminate connectedThread");
-            connectedThread.cancel();
-            connectedThread = null;
+            stopConnectThread();
         }
 
         if (acceptThread != null) {
-            acceptThread.cancel();
-            acceptThread = null;
+            stopAcceptThread();
+        }
+
+        if (mState == STATE_CLOSING && connectedThread == null && connectThread == null && acceptThread == null) {
+            Log.d(TAG, "no open threads");
+            setState(STATE_CLOSED);
         }
     }
 
     public void write(byte[] out) {
-        write(out, false);
-    }
-
-    public void write(byte[] out, boolean backup) {
         // Create temporary object
         ConnectedThread r;
         // Synchronize a copy of the ConnectedThread
         synchronized (this) {
-            if (mState != STATE_CONNECTED) return;
-            if (backup)
-                r = backupThread;
-            else
-                r = connectedThread;
+            r = connectedThread;
         }
         // Perform the write unsynchronized
         r.write(out);
     }
 
-    public synchronized void useConnection (ConnectedThread connection) {
-        if (connectedThread == connection) {
-            Log.d(TAG, "useConnection: use connectedThread");
-            if (backupThread != null)
-                backupThread.cancel();
-        }
-        if (backupThread == connection) {
-            Log.d(TAG, "useConnection: use backupThread");
-            if(connectedThread != null)
-                connectedThread.cancel();
-        }
-        if (connection == null)
-            Log.d(TAG, "useConnection: something wrong, ERROR");
+    
+// ---------------------------
+    public synchronized void request(String request) {
+        //receivedResponse = false;
+        connectedThread.newRequest();
 
-        connectedThread = connection; // same as backup thread
-        Log.d(TAG, "useConnection: request established connection");
-        write(BluetoothConstants.REQUEST_ESTABLISHED_CONNECTION.getBytes());
+        // Create temporary object
+        /*ConnectedThread r;
+        // Synchronize a copy of the ConnectedThread
+        synchronized (this) {
+            r = connectedThread;
+        }
+        // Perform the write unsynchronized
+        r.write(request.getBytes());*/
+        connectedThread.write(request.getBytes());
+        //synchronized (this) {
+            waitForResponse();
+        //}
     }
-
-    public synchronized void resetConnectedThread (ConnectedThread connection) {
-        if (connectedThread == connection) {
-            Log.d(TAG, "resetConnectedThread: reset connectedThread to null, use backupThread");
-            connectedThread = null;
-            connectedThread = backupThread;
-        } else if (backupThread == connection) {
-            Log.d(TAG, "resetConnectedThread: reset backupThread to null, use connectedThread");
-            backupThread = null;
-            if (connectedThread == null) {
-                Log.d(TAG, "resetConnectedThread: something wrong ERROR: other thread is null as well");
-            }
-        } else {
-            Log.d(TAG, "resetConnectedThread: something wrong ERROR");
-        }
+/*
+    private volatile boolean receivedResponse;
+    public synchronized void setReceivedResponse(boolean b) {
+        receivedResponse = b;
+        this.notifyAll();
     }
-
-    /**
-     * Indicate that the connection attempt failed and notify the UI Activity.
-     */
-    public void connectionFailed(BluetoothDevice device) {
-        // Send a failure message back to the Activity
-        /*Message msg = mHandler.obtainMessage(Constants.MESSAGE_TOAST);
-        Bundle bundle = new Bundle();
-        bundle.putString(Constants.TOAST, "Unable to connect device");
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);*/
-
-        //mState = STATE_NONE;
-        Log.d(TAG, "connection failed");
-        disconnect();
-        // wait until all threads closed vvvvvvv
-        Log.d(TAG, "connectionFailed: wait for connection being shut down");
-        try {
-            TimeUnit.MILLISECONDS.sleep(3000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        Log.d(TAG, "connectionFailed: start listening again");
-        startListening();
-        while(mState != STATE_LISTEN) {
+*/
+    // TODO: HIIIIIIIIIIIIIIIIIIIIIERRRRRRRRRRRRRRRRRRRRR request doesn't work MAYBE OWN THREAD FOR TIMEOUT?
+    private synchronized void waitForResponse() {
+        while (!connectedThread.gotResponse()) {
             try {
-                Log.d(TAG, "connectionFailed: wait for listening");
-                TimeUnit.MILLISECONDS.sleep(500);
+                this.wait(BluetoothConstants.TIMEOUT);
+                if (!connectedThread.gotResponse())
+                    break; // break anyway
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-        BluetoothDevices bluetoothDevices = BluetoothController.getBluetoothController().getBluetoothDevices();
-        bluetoothDevices.clearConnected();
-/*
-        // try backup connection
-        Log.d(TAG, "connection lost: duplicate connection is connected: " + duplicateConnection.isConnected());
-        if (duplicateConnection.isConnected()) {
-            Log.d(TAG, "connection lost: try backup connection");
-            startCommunication(duplicateConnection, true);
-        }*/
 
-        //if(mState != STATE_CONNECTED) {
-            // duplicate connection was not successful --> restart listening
-            //startListening();
-        //}
-        Random random = new Random();
-        int timeout = random.nextInt(3000);
-        Log.d(TAG, "connectionFailed: wait for some time: " + timeout);
-        try {
-            TimeUnit.MILLISECONDS.sleep(timeout);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        // either notified or timeout
+        if (!connectedThread.gotResponse()) {
+            // no response
+            setState(BluetoothConstants.STATE_TIMEOUT);
         }
-        if (mState == STATE_LISTEN) {
-            // only try connect if other device didn't try already
-            Log.d(TAG, "connectionFailed: try to connect");
-            connectTo(device);
-        }
+        // else --> do nothing, normal procedure continues
+        Log.d(TAG, "got response");
     }
 
-    /**
-     * Indicate that the connection was lost and notify the UI Activity.
-     */
-    public void connectionLost() {
-        // Send a failure message back to the Activity
-        /*Message msg = mHandler.obtainMessage(Constants.MESSAGE_TOAST);
-        Bundle bundle = new Bundle();
-        bundle.putString(Constants.TOAST, "Device connection was lost");
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);*/
+    public synchronized void onThreadClosed (String thread) {
+        switch(thread) {
+            case BluetoothConstants.CONNECTED_THREAD:
+                Log.d(TAG, "onThreadClosed: connectedThread");
+                connectedThread = null;
+                break;
+            case BluetoothConstants.CONNECT_THREAD:
+                Log.d(TAG, "onThreadClosed: connectThread");
+                connectThread = null;
+                break;
+            case BluetoothConstants.ACCEPT_THREAD:
+                Log.d(TAG, "onThreadClosed: acceptThread");
+                acceptThread = null;
+                break;
+            default:
+                Log.e(TAG, "onThreadClosed: no such thread");
+        }
+        this.notifyAll();
+    }
 
-        mState = STATE_NONE;
-        Log.d(TAG, "connection lost");
-        BluetoothController.getBluetoothController().getBluetoothDevices().clearConnected();
-/*
-        Log.d(TAG, "connection lost: duplicate connection is connected: " + duplicateConnection.isConnected());
-        if (duplicateConnection.isConnected()) {
-            // try backup connection
-            Log.d(TAG, "connection lost: try backup connection");
-            startCommunication(duplicateConnection, true);
-        }*/
-        if(mState != STATE_CONNECTED) {
-            // duplicate connection was not successful --> restart listening
-            startListening();
+    public synchronized void restartConnection () {
+        Log.d(TAG, "restarting connection");
+        // start listening
+        setState(STATE_NONE);
+        // wait until listening
+        while(mState != STATE_LISTEN) {
+            try {
+                this.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (remoteDevice != null) {
+            Random random = new Random();
+            int timeout = random.nextInt(3000);
+            Log.d(TAG, "sleep for " + timeout + "ms");
+            try {
+                TimeUnit.MILLISECONDS.sleep(timeout);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            connectTo(remoteDevice);
+        } else {
+            // either something went wrong or more likely this is the second try (RESTARTING)
+            // should only try once
+            Log.d(TAG, "no remote device");
+            //MAKETOAST connection failed, try again
+            // close connection (+restart)
+            setState(STATE_CLOSE_REQUEST);
         }
     }
 }

@@ -8,6 +8,7 @@ import android.widget.Toast;
 
 import com.mobileanwendungen.drawingapp.BluetoothActivity;
 import com.mobileanwendungen.drawingapp.R;
+import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
 
 public class StateChangedBroadcastReceiver extends BluetoothBroadcastReceiver {
@@ -34,11 +35,20 @@ public class StateChangedBroadcastReceiver extends BluetoothBroadcastReceiver {
                 case BluetoothAdapter.STATE_ON:
                     Log.d(TAG, "onReceive: STATE ON");
                     Toast.makeText(bluetoothActivity, context.getText(R.string.BT_STATE_ON), Toast.LENGTH_SHORT).show();
+                    if (BluetoothController.getBluetoothController().getBluetoothConnectionService() != null) {
+                        // was an error --> shut down old connection service
+                        Log.d(TAG, "onReceive: error detected");
+                        BluetoothController.getBluetoothController().getBluetoothConnectionService().setState(BluetoothConstants.STATE_CLOSE_REQUEST);
+                    }
                     // startListening listening
-                    BluetoothController.getBluetoothController().getBluetoothConnectionService().startListening();
+                    BluetoothController.getBluetoothController().newBluetoothConnectionService();
                     break;
                 case BluetoothAdapter.STATE_TURNING_ON:
                     Log.d(TAG, "onReceive: STATE TURNING ON");
+                    break;
+                case BluetoothAdapter.ERROR:
+                    Log.d(TAG, "onReceive: ERROR with bluetooth adapter");
+                    BluetoothController.getBluetoothController().getBluetoothConnectionService().setState(BluetoothConstants.STATE_RESTARTING);
                     break;
             }
         }

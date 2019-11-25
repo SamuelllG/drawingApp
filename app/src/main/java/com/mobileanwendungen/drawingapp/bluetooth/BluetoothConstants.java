@@ -12,6 +12,15 @@ public class BluetoothConstants {
     public static final int MESSAGE_WRITE = 1;
     public static final int MESSAGE_TOAST = 2;
 
+
+    public static final String CONNECTED_THREAD = "CONNECTED_THREAD";
+    public static final String CONNECT_THREAD = "CONNECT_THREAD";
+    public static final String ACCEPT_THREAD = "ACCEPT_THREAD";
+
+    public static final long TIMEOUT = 2000; // in ms
+
+
+
     public static final String BLUETOOTH_STATE_CHANGED = "drawingapp.BluetoothStateChanged";
     public static final String BlUETOOTH_STATE = "bluetoothState";
     public static final String BLUETOOTH_DEVICES = "bluetoothDevices";
@@ -29,6 +38,15 @@ public class BluetoothConstants {
     public static final int STATE_LISTEN = 1;     // now listening for incoming connections
     public static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
-    public static final int STATE_DISCONNECTING = 4;
     public static final int STATE_VERIFIED_CONNECTION = 5;
+    public static final int STATE_FAILED = 6;
+    public static final int STATE_UNABLE_TO_CONNECT = 13;
+    public static final int STATE_CONNECTING_VIA_SERVER = 7;
+    public static final int STATE_INTERRUPTED = 8; // connection was interrupted
+    public static final int STATE_VERIFICATION = 9;
+    public static final int STATE_CLOSING = 10;
+    public static final int STATE_CLOSED = 11;
+    public static final int STATE_CLOSE_REQUEST = 12;
+    public static final int STATE_RESTARTING = 14;
+    public static final int STATE_TIMEOUT = 15;
 }
