@@ -3,22 +3,15 @@ package com.mobileanwendungen.drawingapp.bluetooth.Threads;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
-import android.content.Intent;
 import android.util.Log;
 
-import com.mobileanwendungen.drawingapp.R;
-import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConnectionService;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
-import com.mobileanwendungen.drawingapp.bluetooth.BluetoothService;
 
 import java.io.IOException;
 import java.util.UUID;
 
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CONNECTED;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CONNECTING;
 import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_LISTEN;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_NONE;
 
 // https://developer.android.com/guide/topics/connectivity/bluetooth#java
 public class AcceptThread extends Thread {
@@ -52,7 +45,7 @@ public class AcceptThread extends Thread {
             bluetoothController.getBluetoothConnectionService().setState(STATE_LISTEN);
             socket = mmServerSocket.accept();
             Log.d(TAG, "run: socket accepted");
-            if (bluetoothController.getBluetoothConnectionService().getState() == STATE_LISTEN) {
+            if (bluetoothController.getBluetoothConnectionService().getConnectionState() == STATE_LISTEN) {
                 // only establish connection over acceptThread, if connectThread has not connected yet
                 bluetoothController.getBluetoothConnectionService().setConnectionSocket(socket);
                 bluetoothController.getBluetoothConnectionService().setState(BluetoothConstants.STATE_CONNECTING_VIA_SERVER);
@@ -60,7 +53,7 @@ public class AcceptThread extends Thread {
                 Log.d(TAG, "run: acceptThread ignored");
             }
         } catch (IOException e) {
-            if (bluetoothController.getBluetoothConnectionService().getState() == STATE_LISTEN) {
+            if (bluetoothController.getBluetoothConnectionService().getConnectionState() == STATE_LISTEN) {
                 Log.d(TAG, "run: socket's accept() method failed");
                 bluetoothController.getBluetoothConnectionService().setState(BluetoothConstants.STATE_FAILED);
             } else {
@@ -76,7 +69,7 @@ public class AcceptThread extends Thread {
     public void cancel() {
         try {
             mmServerSocket.close();
-            if (bluetoothController.getBluetoothConnectionService().getState() == BluetoothConstants.STATE_CONNECTING_VIA_SERVER || bluetoothController.getBluetoothConnectionService().getState() == BluetoothConstants.STATE_CONNECTING) {
+            if (bluetoothController.getBluetoothConnectionService().getConnectionState() == BluetoothConstants.STATE_CONNECTING_VIA_SERVER || bluetoothController.getBluetoothConnectionService().getConnectionState() == BluetoothConstants.STATE_CONNECTING) {
                 // this thread is being closed because accept() already returned or accept was ignored
                 bluetoothController.getBluetoothConnectionService().onThreadClosed(BluetoothConstants.ACCEPT_THREAD);
             }

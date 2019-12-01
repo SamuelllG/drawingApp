@@ -20,7 +20,6 @@ import com.mobileanwendungen.drawingapp.bluetooth.BroadcastReceivers.BondStateCh
 import com.mobileanwendungen.drawingapp.bluetooth.BroadcastReceivers.DiscoverBroadcastReceiver;
 import com.mobileanwendungen.drawingapp.bluetooth.BroadcastReceivers.ScanModeChangedBroadcastReceiver;
 import com.mobileanwendungen.drawingapp.bluetooth.BroadcastReceivers.StateChangedBroadcastReceiver;
-import com.mobileanwendungen.drawingapp.bluetooth.Threads.ConnectedThread;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +34,7 @@ public class BluetoothController {
     private BluetoothBroadcastReceiver scanModeChangedBroadcastReceiver;
     private BluetoothBroadcastReceiver discoverBroadcastReceiver;
     private BluetoothBroadcastReceiver bondStateChangedBroadcastReceiver;
-    private BluetoothBroadcastReceiver bluetoothStateChangedBroadcastReceiver;
+    //private BluetoothBroadcastReceiver bluetoothStateChangedBroadcastReceiver;
 
 
     private BluetoothConnectionService bluetoothConnectionService;
@@ -64,14 +63,14 @@ public class BluetoothController {
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
 
-        IntentFilter Intent = new IntentFilter(BluetoothConstants.BLUETOOTH_STATE_CHANGED);
-        bluetoothActivity.registerReceiver(bluetoothStateChangedBroadcastReceiver, Intent);
+        //IntentFilter Intent = new IntentFilter(BluetoothConstants.BLUETOOTH_STATE_CHANGED);
+        //bluetoothActivity.registerReceiver(bluetoothStateChangedBroadcastReceiver, Intent);
 
         discoverBroadcastReceiver = new DiscoverBroadcastReceiver(bluetoothActivity);
         scanModeChangedBroadcastReceiver = new ScanModeChangedBroadcastReceiver(bluetoothActivity);
         stateChangedBroadcastReceiver = new StateChangedBroadcastReceiver(bluetoothActivity);
         bondStateChangedBroadcastReceiver = new BondStateChangedBroadcastReceiver(bluetoothActivity);
-        bluetoothStateChangedBroadcastReceiver = new BluetoothStateChangedBroadcastReceiver(bluetoothActivity, bluetoothConnectionService);
+        //bluetoothStateChangedBroadcastReceiver = new BluetoothStateChangedBroadcastReceiver(bluetoothActivity, bluetoothConnectionService);
 
         // if bluetooth is already on when entering the bluetooth activity
         if (bluetoothAdapter.isEnabled()) {
@@ -83,8 +82,10 @@ public class BluetoothController {
     }
 
     public void newBluetoothConnectionService() {
+        // prevent btConnectionService thread from "restarting" itself, should only be started from a UI thread (because of handler)
         bluetoothActivity.runOnUiThread(() -> {
             bluetoothConnectionService = new BluetoothConnectionService();
+            bluetoothConnectionService.start();
         });
     }
 
@@ -222,7 +223,7 @@ public class BluetoothController {
     }
 */
     public void onDeviceClicked(BluetoothDevice device) {
-        if (bluetoothDevices.isConnected(device) && bluetoothConnectionService.getState() == BluetoothConstants.STATE_CONNECTED) {
+        if (bluetoothDevices.isConnected(device) && bluetoothConnectionService.getConnectionState() == BluetoothConstants.STATE_CONNECTED) {
             // clicked on connected device --> do nothing
             Log.d(TAG, "onDeviceClicked: clicked on already connected device");
             Toast.makeText(bluetoothActivity, bluetoothActivity.getResources().getString(R.string.clicked_connected), Toast.LENGTH_SHORT).show();
@@ -302,13 +303,13 @@ public class BluetoothController {
         return list;
     }
 
-    public void onState(int connectionState, BluetoothDevice device) {
+    public void onState(int connectionState) {
         // TODO: refactor this
         switch (connectionState) {
             case BluetoothConstants.STATE_CONNECTED:
                 // update UI
                 try {
-                    bluetoothDevices.setConnected(device);
+                    bluetoothDevices.setConnected(bluetoothConnectionService.getRemoteDevice());
                 } catch (BluetoothConnectionException e) {
                     e.printStackTrace();
                 }

@@ -10,11 +10,13 @@ import android.widget.Toast;
 import com.mobileanwendungen.drawingapp.bluetooth.Threads.AcceptThread;
 import com.mobileanwendungen.drawingapp.bluetooth.Threads.ConnectThread;
 import com.mobileanwendungen.drawingapp.bluetooth.Threads.ConnectedThread;
+import com.mobileanwendungen.drawingapp.bluetooth.Threads.TimeoutThread;
 
 import java.sql.Time;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.SHUT_DOWN;
 import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CLOSED;
 import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CLOSE_REQUEST;
 import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CLOSING;
@@ -31,7 +33,7 @@ import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STAT
 import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_VERIFICATION;
 import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_VERIFIED_CONNECTION;
 
-public class BluetoothConnectionService {
+public class BluetoothConnectionService extends Thread{
     public static final String TAG = "cust.BTConnectService";
 
     private BluetoothAdapter bluetoothAdapter;
@@ -41,12 +43,15 @@ public class BluetoothConnectionService {
     private ConnectedThread backupThread;
     private volatile ConnectThread connectThread;
     private volatile AcceptThread acceptThread;
+    private volatile TimeoutThread timeoutThread;
     private volatile int mState;
+    private int oldState;
     private BluetoothSocket connectionSocket;
     private BluetoothSocket duplicateConnection;
     public static boolean connectRequestReceived;
     public static int roll;
     private BluetoothDevice remoteDevice;
+    private volatile boolean receivedResponse;
 
     public synchronized void setConnectionSocket(BluetoothSocket socket) {
         connectionSocket = socket;
@@ -100,15 +105,18 @@ public class BluetoothConnectionService {
             case STATE_TIMEOUT:
                 name = "STATE_TIMEOUT";
                 break;
+            case SHUT_DOWN:
+                name = "SHUT_DOWN";
+                break;
             default:
                 name = "STATE NOT FOUND";
         }
         Log.d(TAG, "mState = " + name);
         mState = state;
-        onStateChanged();
+        //onStateChanged();
     }
 
-    public synchronized int getState() {
+    public synchronized int getConnectionState() {
         return mState;
     }
 
@@ -141,7 +149,7 @@ public class BluetoothConnectionService {
                 break;
             case STATE_VERIFICATION:
                 Log.d(TAG, "request established connection");
-                write(BluetoothConstants.REQUEST_ESTABLISHED_CONNECTION.getBytes());
+                request(BluetoothConstants.REQUEST_ESTABLISHED_CONNECTION);
                 break;
             case STATE_VERIFIED_CONNECTION:
                 Log.d(TAG, "running...");
@@ -161,8 +169,10 @@ public class BluetoothConnectionService {
                 setState(STATE_RESTARTING);
                 break;
             case STATE_TIMEOUT:
-                Log.d(TAG, "timeout");
+                Log.d(TAG, " --/ timeout /--");
+                // TODO: restarting = close request doesnt make sense because it was a timeout
                 setState(STATE_RESTARTING);
+                break;
             case STATE_CLOSE_REQUEST:
                 Log.d(TAG, "request close connection");
                 request(BluetoothConstants.REQUEST_CLOSE_CONNECTION);
@@ -171,6 +181,8 @@ public class BluetoothConnectionService {
                 closeAll();
                 break;
             case STATE_CLOSED:
+                // finish thread
+                setState(BluetoothConstants.SHUT_DOWN);
                 BluetoothController.getBluetoothController().onConnectionClosed();
                 Log.d(TAG, "-----------------------------------------------------------------");
                 break;
@@ -183,12 +195,31 @@ public class BluetoothConnectionService {
         }
     }
 
+    public BluetoothDevice getRemoteDevice() {
+        return connectedThread.getRemoteDevice();
+    }
+
 
     public BluetoothConnectionService() {
         Log.d(TAG, "new BTConnectionService");
         handler = new MyHandler();
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         setState(STATE_NONE);
+        oldState = Integer.MAX_VALUE;
+    }
+
+    @Override
+    public void run() {
+        Log.d(TAG, "start BTConnectionService");
+        // kind of event listener for the state
+        while (mState != SHUT_DOWN) {
+            if (oldState != mState) {
+                //Log.d(TAG, "old state: " + oldState + " new state: " + mState);
+                // setting this first is important
+                oldState = mState;
+                onStateChanged();
+            }
+        }
     }
 
 
@@ -197,7 +228,7 @@ public class BluetoothConnectionService {
         connectThread.start();
     }
 
-    public synchronized void stopConnectThread() {
+    private synchronized void stopConnectThread() {
         connectThread.cancel();
         while (connectThread != null) {
             try {
@@ -208,7 +239,7 @@ public class BluetoothConnectionService {
         }
         Log.d(TAG, "connect thread closed");
     }
-    public synchronized void stopAcceptThread() {
+    private synchronized void stopAcceptThread() {
         acceptThread.cancel();
         while (acceptThread != null) {
             try {
@@ -219,7 +250,7 @@ public class BluetoothConnectionService {
         }
         Log.d(TAG, "accept thread closed");
     }
-    public synchronized void stopConnectedThread() {
+    private synchronized void stopConnectedThread() {
         connectedThread.cancel();
         while (connectedThread != null) {
             try {
@@ -275,26 +306,19 @@ public class BluetoothConnectionService {
         }
         // Perform the write unsynchronized
         r.write(out);
+        Log.d(TAG, "wrote something");
     }
 
-    
+
 // ---------------------------
     public synchronized void request(String request) {
         //receivedResponse = false;
-        connectedThread.newRequest();
+        //connectedThread.newRequest();
+        receivedResponse = false;
 
-        // Create temporary object
-        /*ConnectedThread r;
-        // Synchronize a copy of the ConnectedThread
-        synchronized (this) {
-            r = connectedThread;
-        }
-        // Perform the write unsynchronized
-        r.write(request.getBytes());*/
-        connectedThread.write(request.getBytes());
-        //synchronized (this) {
-            waitForResponse();
-        //}
+        write(request.getBytes());
+        //connectedThread.write(request.getBytes());
+        waitForResponse();
     }
 /*
     private volatile boolean receivedResponse;
@@ -303,25 +327,13 @@ public class BluetoothConnectionService {
         this.notifyAll();
     }
 */
-    // TODO: HIIIIIIIIIIIIIIIIIIIIIERRRRRRRRRRRRRRRRRRRRR request doesn't work MAYBE OWN THREAD FOR TIMEOUT?
-    private synchronized void waitForResponse() {
-        while (!connectedThread.gotResponse()) {
-            try {
-                this.wait(BluetoothConstants.TIMEOUT);
-                if (!connectedThread.gotResponse())
-                    break; // break anyway
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+    public void setReceivedResponse (boolean b) {
+        receivedResponse = b;
+    }
 
-        // either notified or timeout
-        if (!connectedThread.gotResponse()) {
-            // no response
-            setState(BluetoothConstants.STATE_TIMEOUT);
-        }
-        // else --> do nothing, normal procedure continues
-        Log.d(TAG, "got response");
+    private synchronized void waitForResponse() {
+        timeoutThread = new TimeoutThread(this);
+        timeoutThread.start();
     }
 
     public synchronized void onThreadClosed (String thread) {
@@ -375,5 +387,9 @@ public class BluetoothConnectionService {
             // close connection (+restart)
             setState(STATE_CLOSE_REQUEST);
         }
+    }
+
+    public boolean getReceivedResponse() {
+        return receivedResponse;
     }
 }

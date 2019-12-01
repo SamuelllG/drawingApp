@@ -17,21 +17,33 @@ public class BluetoothConstants {
     public static final String CONNECT_THREAD = "CONNECT_THREAD";
     public static final String ACCEPT_THREAD = "ACCEPT_THREAD";
 
-    public static final long TIMEOUT = 2000; // in ms
+    public static final long TIMEOUT = 2000999999; // in ms
 
 
 
-    public static final String BLUETOOTH_STATE_CHANGED = "drawingapp.BluetoothStateChanged";
-    public static final String BlUETOOTH_STATE = "bluetoothState";
-    public static final String BLUETOOTH_DEVICES = "bluetoothDevices";
-    public static final String BLUETOOTH_SOCKET = "bluetoothSocket";
-    public static final String REQUEST_CLOSE_CONNECTION = "REQUEST_CLOSE_CONNECTION";
-    public static final String CONFIRMED_CLOSE_CONNECTION = "CONFIRM_CLOSE_CONNECTION";
-    public static final String CLOSE_CONNECTION = "CLOSE_CONNECTION";
-    public static final String REQUEST_CONNECT = "REQUEST_CONNECT";
-    public static final String CONFIRMED_CONNECT_REQUEST = "CONFIRMED_CONNECT_REQUEST";
+    //public static final String BLUETOOTH_STATE_CHANGED = "drawingapp.BluetoothStateChanged";
+    //public static final String BlUETOOTH_STATE = "bluetoothState";
+    //public static final String BLUETOOTH_DEVICES = "bluetoothDevices";
+    //public static final String BLUETOOTH_SOCKET = "bluetoothSocket";
+    //public static final String CLOSE_CONNECTION = "CLOSE_CONNECTION";
+    //public static final String REQUEST_CONNECT = "REQUEST_CONNECT";
+    //public static final String CONFIRMED_CONNECT_REQUEST = "CONFIRMED_CONNECT_REQUEST";
+
+
+    // Requests:
+    public static final String[] REQUESTS = {   "REQUEST_ESTABLISHED_CONNECTION",
+                                                "REQUEST_CLOSE_CONNECTION" };
+
     public static final String REQUEST_ESTABLISHED_CONNECTION = "REQUEST_ESTABLISHED_CONNECTION";
-    public static final String CONFIRMED_ESTABLISHED_CONNECTION = "CONFIRM_ESTABLISHED_CONNECTION";
+    public static final String REQUEST_CLOSE_CONNECTION = "REQUEST_CLOSE_CONNECTION";
+
+
+    // Responses:
+    public static final String[] RESPONSES = {  "CONFIRM_ESTABLISHED_CONNECTION",
+                                                "CONFIRM_CLOSE_CONNECTION" };
+
+    public static final String CONFIRM_ESTABLISHED_CONNECTION = "CONFIRM_ESTABLISHED_CONNECTION";
+    public static final String CONFIRM_CLOSE_CONNECTION = "CONFIRM_CLOSE_CONNECTION";
 
 
     public static final int STATE_NONE = 0;       // we're doing nothing
@@ -49,4 +61,5 @@ public class BluetoothConstants {
     public static final int STATE_CLOSE_REQUEST = 12;
     public static final int STATE_RESTARTING = 14;
     public static final int STATE_TIMEOUT = 15;
+    public static final int SHUT_DOWN = 16;
 }

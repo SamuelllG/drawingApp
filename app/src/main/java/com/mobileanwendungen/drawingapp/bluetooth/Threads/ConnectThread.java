@@ -5,17 +5,12 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.util.Log;
 
-import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConnectionService;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
-import com.mobileanwendungen.drawingapp.bluetooth.BluetoothService;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CONNECTED;
 import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CONNECTING;
 import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CONNECTING_VIA_SERVER;
 import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_LISTEN;
@@ -54,14 +49,14 @@ public class ConnectThread extends Thread {
         // Cancel discovery because it otherwise slows down the connection.
         bluetoothAdapter.cancelDiscovery();
 
-        if (bluetoothController.getBluetoothConnectionService().getState() != STATE_CONNECTING_VIA_SERVER) {
+        if (bluetoothController.getBluetoothConnectionService().getConnectionState() != STATE_CONNECTING_VIA_SERVER) {
             // only use this, if accept thread has not been connected yet
-            if (bluetoothController.getBluetoothConnectionService().getState() != STATE_LISTEN)
+            if (bluetoothController.getBluetoothConnectionService().getConnectionState() != STATE_LISTEN)
                 Log.d(TAG, "ERROR: should be listening");
             try {
                 mmSocket.connect();
                 Log.d(TAG, "run: ConnectThread connected");
-                if (bluetoothController.getBluetoothConnectionService().getState() == STATE_LISTEN) {
+                if (bluetoothController.getBluetoothConnectionService().getConnectionState() == STATE_LISTEN) {
                     // only establish connection over connectThread, if accept thread has not connected yet
                     bluetoothController.getBluetoothConnectionService().setConnectionSocket(mmSocket);
                     bluetoothController.getBluetoothConnectionService().setState(STATE_CONNECTING);
@@ -69,7 +64,7 @@ public class ConnectThread extends Thread {
                     Log.d(TAG, "run: connectThread ignored");
                 }
             } catch (IOException e) {
-                if (bluetoothController.getBluetoothConnectionService().getState() == STATE_LISTEN) {
+                if (bluetoothController.getBluetoothConnectionService().getConnectionState() == STATE_LISTEN) {
                     Log.d(TAG, "run: exception during connecting");
                     // the other device is not available
                     //bluetoothController.getBluetoothConnectionService().connectionFailed(mmDevice);
@@ -95,7 +90,7 @@ public class ConnectThread extends Thread {
     public void cancel() {
         try {
             mmSocket.close();
-            if (bluetoothController.getBluetoothConnectionService().getState() == BluetoothConstants.STATE_CLOSING || bluetoothController.getBluetoothConnectionService().getState() == BluetoothConstants.STATE_CONNECTING_VIA_SERVER)
+            if (bluetoothController.getBluetoothConnectionService().getConnectionState() == BluetoothConstants.STATE_CLOSING || bluetoothController.getBluetoothConnectionService().getConnectionState() == BluetoothConstants.STATE_CONNECTING_VIA_SERVER)
                 // if connection was established over the connectThread, then stays open until connection is closed (because of the socket)
                 // or if connection was established via the acceptThread, but connectThread returned a socket as well (but was ignored)
                 bluetoothController.getBluetoothConnectionService().onThreadClosed(BluetoothConstants.CONNECT_THREAD);
