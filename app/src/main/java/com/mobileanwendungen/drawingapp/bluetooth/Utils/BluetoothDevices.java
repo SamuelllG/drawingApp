@@ -1,6 +1,8 @@
-package com.mobileanwendungen.drawingapp.bluetooth;
+package com.mobileanwendungen.drawingapp.bluetooth.Utils;
 
 import android.bluetooth.BluetoothDevice;
+
+import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConnectionException;
 
 import java.util.ArrayList;
 import java.util.List;

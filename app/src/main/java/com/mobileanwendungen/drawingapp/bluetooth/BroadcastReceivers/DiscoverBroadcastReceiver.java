@@ -8,8 +8,8 @@ import android.util.Log;
 import com.mobileanwendungen.drawingapp.BluetoothActivity;
 import com.mobileanwendungen.drawingapp.R;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
-import com.mobileanwendungen.drawingapp.bluetooth.BluetoothDevices;
-import com.mobileanwendungen.drawingapp.bluetooth.DeviceListAdapter;
+import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothDevices;
+import com.mobileanwendungen.drawingapp.bluetooth.Utils.DeviceListAdapter;
 
 public class DiscoverBroadcastReceiver extends BluetoothBroadcastReceiver {
 

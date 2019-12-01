@@ -3,44 +3,42 @@ package com.mobileanwendungen.drawingapp.bluetooth;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
-import android.widget.Toast;
 
-import com.mobileanwendungen.drawingapp.bluetooth.Threads.ConnectedThread;
+import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CLOSING;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CONNECTED;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_VERIFIED_CONNECTION;
+import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants.STATE_CLOSING;
+import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants.STATE_CONNECTED;
+import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants.STATE_VERIFIED_CONNECTION;
+
+// TODO: make UI handler
 
 public class MyHandler extends Handler {
-    public static final String TAG = "cust.MyHandler";
+    private static final String TAG = "cust.MyHandler";
+
+    private enum InputType { REQUEST, RESPONSE, DATA };
 
     @Override
     public void handleMessage(Message inputMessage) {
         switch (inputMessage.what) {
             case BluetoothConstants.MESSAGE_READ:
-                //Log.d(TAG, "handleMessage: read, message: " + ((byte[])inputMessage.obj).toString());
-                //ByteBuffer bb = ByteBuffer.wrap((byte[])inputMessage.obj);
-                //int d = bb.getInt(0);
-                //Log.d(TAG, "handleMessage: read, message: " + d);
                 readMessage((byte[]) inputMessage.obj, inputMessage.arg1);
                 break;
             case BluetoothConstants.MESSAGE_WRITE:
-                Log.d(TAG, "handleMessage: wrote message");
+                // not implemented
                 break;
             case BluetoothConstants.MESSAGE_TOAST:
-                String toast = inputMessage.getData().getString("toast");
-                Log.d(TAG, "handleMessage: error + " + toast);
+                // not implemented
+                //String toast = inputMessage.getData().getString("toast");
+                //Log.d(TAG, "handleMessage: error + " + toast);
                 //Toast.makeText()
                 break;
+            default:
+                Log.d(TAG, "inputMessage type not found");
         }
 
     }
-
-
-    private enum InputType { REQUEST, RESPONSE, DATA };
 
     private synchronized void readMessage(byte[] buffer, int numBytes) {
         String received = getReceivedString(buffer, numBytes);
@@ -58,9 +56,10 @@ public class MyHandler extends Handler {
             case DATA:
                 Log.d(TAG, "got data");
                 break;
+            default:
+                Log.d(TAG, "ERROR: received unidentifiable data");
         }
     }
-
 
     private synchronized String getReceivedString (byte[] buffer, int numBytes) {
         return new String(Arrays.copyOfRange(buffer, 0, numBytes));
@@ -73,23 +72,6 @@ public class MyHandler extends Handler {
             return InputType.RESPONSE;
         else
             return InputType.DATA;
-    }
-
-
-    private synchronized void processResponse (String response) {
-        switch (response) {
-            case BluetoothConstants.CONFIRM_ESTABLISHED_CONNECTION:
-                Log.d(TAG, "response: established connection was confirmed");
-                BluetoothController.getBluetoothController().getBluetoothConnectionService().setState(STATE_VERIFIED_CONNECTION);
-                BluetoothController.getBluetoothController().onState(STATE_CONNECTED);
-                break;
-            case BluetoothConstants.CONFIRM_CLOSE_CONNECTION:
-                Log.d(TAG, "response: close connection was confirmed");
-                BluetoothController.getBluetoothController().getBluetoothConnectionService().setState(STATE_CLOSING);
-                break;
-            default:
-                break;
-        }
     }
 
     private synchronized void processRequest (String request) {
@@ -112,7 +94,6 @@ public class MyHandler extends Handler {
             }
             return true;
         }*/
-
         switch (request) {
             case BluetoothConstants.REQUEST_ESTABLISHED_CONNECTION:
                 Log.d(TAG, "processRequest: established connection was requested");
@@ -148,8 +129,23 @@ public class MyHandler extends Handler {
                 return true;
                 //TODO reset roll after successful connection*/
             default:
-                break;
+                Log.d(TAG, "ERROR: you forgot to add the request to the handler ;)");
+        }
+    }
 
+    private synchronized void processResponse (String response) {
+        switch (response) {
+            case BluetoothConstants.CONFIRM_ESTABLISHED_CONNECTION:
+                Log.d(TAG, "response: established connection was confirmed");
+                BluetoothController.getBluetoothController().getBluetoothConnectionService().setState(STATE_VERIFIED_CONNECTION);
+                BluetoothController.getBluetoothController().onState(STATE_CONNECTED);
+                break;
+            case BluetoothConstants.CONFIRM_CLOSE_CONNECTION:
+                Log.d(TAG, "response: close connection was confirmed");
+                BluetoothController.getBluetoothController().getBluetoothConnectionService().setState(STATE_CLOSING);
+                break;
+            default:
+                Log.d(TAG, "ERROR: you forgot to add the response to the handler ;)");
         }
     }
 

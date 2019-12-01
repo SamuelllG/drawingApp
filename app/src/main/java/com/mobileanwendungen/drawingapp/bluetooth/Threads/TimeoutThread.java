@@ -3,12 +3,12 @@ package com.mobileanwendungen.drawingapp.bluetooth.Threads;
 import android.util.Log;
 
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConnectionService;
-import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants;
+import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
 
 import java.util.concurrent.TimeUnit;
 
 public class TimeoutThread extends Thread {
-    public static final String TAG = "cust.TimeoutThread";
+    private static final String TAG = "cust.TimeoutThread";
 
     private BluetoothConnectionService bluetoothConnectionService;
 

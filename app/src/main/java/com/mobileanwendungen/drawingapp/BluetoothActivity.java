@@ -12,8 +12,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
-import com.mobileanwendungen.drawingapp.bluetooth.BluetoothDevices;
-import com.mobileanwendungen.drawingapp.bluetooth.DeviceListAdapter;
+import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothDevices;
+import com.mobileanwendungen.drawingapp.bluetooth.Utils.DeviceListAdapter;
 
 public class BluetoothActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
     private static final String TAG = "cust.BluetoothActivity";

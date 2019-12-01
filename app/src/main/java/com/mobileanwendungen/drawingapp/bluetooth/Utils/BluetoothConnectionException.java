@@ -1,4 +1,4 @@
-package com.mobileanwendungen.drawingapp.bluetooth;
+package com.mobileanwendungen.drawingapp.bluetooth.Utils;
 
 public class BluetoothConnectionException extends Exception {
     public BluetoothConnectionException (String message) {

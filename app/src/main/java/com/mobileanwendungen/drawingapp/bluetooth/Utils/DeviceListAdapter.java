@@ -1,4 +1,4 @@
-package com.mobileanwendungen.drawingapp.bluetooth;
+package com.mobileanwendungen.drawingapp.bluetooth.Utils;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
@@ -11,9 +11,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.mobileanwendungen.drawingapp.R;
-
-import java.util.ArrayList;
-import java.util.List;
+import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothDevices;
 
 public class DeviceListAdapter extends ArrayAdapter<BluetoothDevice> {
 
@@ -46,12 +44,7 @@ public class DeviceListAdapter extends ArrayAdapter<BluetoothDevice> {
             }
             if (deviceAdress != null) {
                 deviceAdress.setText(device.getAddress());
-            }/*
-            if (bluetoothDevices.isBonded(device)) {
-                bonded.setText("B");
-                connectButton.setVisibility(View.VISIBLE);
-                connectButton.setText(getContext().getResources().getString(R.string.connectButton));
-            }*/
+            }
             if (bluetoothDevices.isBonded(device)) {
                 connected.setTextColor(Color.YELLOW);
                 connected.setText(getContext().getResources().getString(R.string.bonded));

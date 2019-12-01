@@ -1,4 +1,4 @@
-package com.mobileanwendungen.drawingapp.bluetooth;
+package com.mobileanwendungen.drawingapp.bluetooth.Utils;
 
 public class BluetoothConstants {
 
@@ -46,15 +46,15 @@ public class BluetoothConstants {
     public static final String CONFIRM_CLOSE_CONNECTION = "CONFIRM_CLOSE_CONNECTION";
 
 
-    public static final int STATE_NONE = 0;       // we're doing nothing
-    public static final int STATE_LISTEN = 1;     // now listening for incoming connections
-    public static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
-    public static final int STATE_CONNECTED = 3;  // now connected to a remote device
+    public static final int STATE_NONE = 0;
+    public static final int STATE_LISTEN = 1;
+    public static final int STATE_CONNECTING = 2;
+    public static final int STATE_CONNECTED = 3;
     public static final int STATE_VERIFIED_CONNECTION = 5;
     public static final int STATE_FAILED = 6;
     public static final int STATE_UNABLE_TO_CONNECT = 13;
     public static final int STATE_CONNECTING_VIA_SERVER = 7;
-    public static final int STATE_INTERRUPTED = 8; // connection was interrupted
+    public static final int STATE_INTERRUPTED = 8;
     public static final int STATE_VERIFICATION = 9;
     public static final int STATE_CLOSING = 10;
     public static final int STATE_CLOSED = 11;
