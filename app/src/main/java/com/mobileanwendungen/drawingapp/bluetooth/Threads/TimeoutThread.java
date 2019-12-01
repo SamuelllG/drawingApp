@@ -28,7 +28,7 @@ public class TimeoutThread extends Thread {
                 e.printStackTrace();
             }
         }
-        if (!bluetoothConnectionService.getReceivedResponse()) {
+        if (!bluetoothConnectionService.getReceivedResponse() && bluetoothConnectionService.getConnectedThread() != null) {
             // no response
             Log.d(TAG, "no response on request");
             bluetoothConnectionService.setState(BluetoothConstants.STATE_TIMEOUT);

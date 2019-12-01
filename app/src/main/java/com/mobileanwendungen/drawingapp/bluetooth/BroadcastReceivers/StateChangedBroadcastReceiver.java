@@ -48,7 +48,7 @@ public class StateChangedBroadcastReceiver extends BluetoothBroadcastReceiver {
                     break;
                 case BluetoothAdapter.ERROR:
                     Log.d(TAG, "onReceive: ERROR with bluetooth adapter");
-                    BluetoothController.getBluetoothController().getBluetoothConnectionService().setState(BluetoothConstants.STATE_RESTARTING);
+                    BluetoothController.getBluetoothController().getBluetoothConnectionService().setState(BluetoothConstants.STATE_INIT_RESTART);
                     break;
             }
         }

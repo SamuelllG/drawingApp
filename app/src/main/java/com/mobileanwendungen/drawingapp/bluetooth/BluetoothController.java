@@ -100,7 +100,7 @@ public class BluetoothController {
         }
         if (!bluetoothAdapter.isEnabled()) {
             Log.d(TAG, "toggleBluetooth: enabling BT");
-            getBondedDevices();
+            bluetoothDevices.addAllBonded(getBondedDevices());
             bluetoothActivity.listViewDevices.setVisibility(View.VISIBLE);
             Intent enableBTIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             bluetoothActivity.startActivity(enableBTIntent);
@@ -119,7 +119,9 @@ public class BluetoothController {
     private void disableBluetooth() {
         waitingForBluetoothDisable = false;
         Log.d(TAG, "disableBluetooth: disable bluetooth");
-        bluetoothActivity.listViewDevices.setVisibility(View.INVISIBLE);
+        bluetoothActivity.runOnUiThread(() -> {
+            bluetoothActivity.listViewDevices.setVisibility(View.INVISIBLE);
+        });
         bluetoothAdapter.disable();
         IntentFilter BTIntent = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         bluetoothActivity.registerReceiver(stateChangedBroadcastReceiver, BTIntent);
@@ -271,7 +273,8 @@ public class BluetoothController {
     }
 
     public void stopConnection() {
-        bluetoothConnectionService.setState(BluetoothConstants.STATE_CLOSE_REQUEST);
+        if (bluetoothConnectionService != null && bluetoothConnectionService.getConnectedThread() != null)
+            bluetoothConnectionService.setState(BluetoothConstants.STATE_CLOSE_REQUEST);
     }
 
     public void onConnectionClosed() {

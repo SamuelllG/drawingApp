@@ -17,7 +17,7 @@ public class BluetoothConstants {
     public static final String CONNECT_THREAD = "CONNECT_THREAD";
     public static final String ACCEPT_THREAD = "ACCEPT_THREAD";
 
-    public static final long TIMEOUT = 2000999999; // in ms
+    public static final long TIMEOUT = 2000; // in ms
 
 
 
@@ -59,7 +59,8 @@ public class BluetoothConstants {
     public static final int STATE_CLOSING = 10;
     public static final int STATE_CLOSED = 11;
     public static final int STATE_CLOSE_REQUEST = 12;
-    public static final int STATE_RESTARTING = 14;
+    public static final int STATE_INIT_RESTART = 14;
     public static final int STATE_TIMEOUT = 15;
-    public static final int SHUT_DOWN = 16;
+    public static final int STATE_SHUT_DOWN = 16;
+    public static final int STATE_RESTARTING = 17;
 }
