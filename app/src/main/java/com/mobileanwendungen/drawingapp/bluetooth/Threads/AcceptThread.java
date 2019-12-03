@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.util.Log;
 
+import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConnectionService;
 import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
 
@@ -14,12 +15,12 @@ import java.util.UUID;
 public class AcceptThread extends Thread {
     private static final String TAG = "cust.AcceptThread";
 
-    private final BluetoothController bluetoothController;
+    private final BluetoothConnectionService bluetoothConnectionService;
     private final BluetoothServerSocket mmServerSocket;
 
     public AcceptThread(BluetoothAdapter bluetoothAdapter) {
         Log.d(TAG, "new AcceptThread");
-        this.bluetoothController = BluetoothController.getBluetoothController();
+        bluetoothConnectionService = BluetoothController.getBluetoothController().getBluetoothConnectionService();
 
         BluetoothServerSocket tmp = null;
         try {
@@ -32,25 +33,25 @@ public class AcceptThread extends Thread {
 
     @Override
     public void run() {
-        BluetoothSocket socket = null;
+        BluetoothSocket socket;
         try {
-            bluetoothController.getBluetoothConnectionService().setState(BluetoothConstants.STATE_LISTEN);
+            bluetoothConnectionService.setState(BluetoothConstants.STATE_LISTEN);
             socket = mmServerSocket.accept();
             Log.d(TAG, "run: socket accepted");
-            if (bluetoothController.getBluetoothConnectionService().getConnectionState() == BluetoothConstants.STATE_LISTEN) {
+            if (bluetoothConnectionService.getConnectionState() == BluetoothConstants.STATE_LISTEN) {
                 // only establish connection over acceptThread, if connectThread has not connected yet
-                bluetoothController.getBluetoothConnectionService().setConnectionSocket(socket);
-                bluetoothController.getBluetoothConnectionService().setState(BluetoothConstants.STATE_CONNECTING_VIA_SERVER);
+                bluetoothConnectionService.setConnectionSocket(socket);
+                bluetoothConnectionService.setState(BluetoothConstants.STATE_CONNECTING_VIA_SERVER);
             } else {
                 Log.d(TAG, "run: acceptThread ignored");
             }
         } catch (IOException e) {
-            if (bluetoothController.getBluetoothConnectionService().getConnectionState() == BluetoothConstants.STATE_LISTEN) {
+            if (bluetoothConnectionService.getConnectionState() == BluetoothConstants.STATE_LISTEN) {
                 Log.d(TAG, "run: socket's accept() method failed");
-                bluetoothController.getBluetoothConnectionService().setState(BluetoothConstants.STATE_FAILED);
+                bluetoothConnectionService.setState(BluetoothConstants.STATE_FAILED);
             }
         }
-        bluetoothController.getBluetoothConnectionService().onThreadClosed(BluetoothConstants.ACCEPT_THREAD);
+        bluetoothConnectionService.onThreadClosed(BluetoothConstants.ACCEPT_THREAD);
     }
 
     public void cancel() {

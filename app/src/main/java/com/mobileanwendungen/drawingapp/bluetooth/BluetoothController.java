@@ -251,9 +251,6 @@ public class BluetoothController {
 
 
 
-
-
-
     private void createBond(BluetoothDevice device) {
         // TODO: FRAGE: receivers get register multiple times ... unregister it, if it's already existing? or skip it?
         cancelDiscovery();
