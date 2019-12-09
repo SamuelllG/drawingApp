@@ -63,4 +63,5 @@ public class BluetoothConstants {
     public static final int STATE_TIMEOUT = 15;
     public static final int STATE_SHUT_DOWN = 16;
     public static final int STATE_RESTARTING = 17;
+    public static final int STATE_FORCE_CLOSE = 18;
 }

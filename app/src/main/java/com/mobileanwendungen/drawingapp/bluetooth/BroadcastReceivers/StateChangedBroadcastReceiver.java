@@ -31,6 +31,9 @@ public class StateChangedBroadcastReceiver extends BluetoothBroadcastReceiver {
                     break;
                 case BluetoothAdapter.STATE_TURNING_OFF:
                     Log.d(TAG, "onReceive: STATE TURNING OFF");
+                    if (BluetoothController.getBluetoothController().getBluetoothConnectionService() != null) {
+                        BluetoothController.getBluetoothController().getBluetoothConnectionService().setState(BluetoothConstants.STATE_FORCE_CLOSE);
+                    }
                     break;
                 case BluetoothAdapter.STATE_ON:
                     Log.d(TAG, "onReceive: STATE ON");
@@ -41,7 +44,7 @@ public class StateChangedBroadcastReceiver extends BluetoothBroadcastReceiver {
                         BluetoothController.getBluetoothController().getBluetoothConnectionService().setState(BluetoothConstants.STATE_CLOSE_REQUEST);
                     }
                     // startListening listening
-                    BluetoothController.getBluetoothController().newBluetoothConnectionService();
+                    BluetoothController.getBluetoothController().onBluetoothOn();
                     break;
                 case BluetoothAdapter.STATE_TURNING_ON:
                     Log.d(TAG, "onReceive: STATE TURNING ON");

@@ -8,12 +8,15 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
+import android.provider.Contacts;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
 import com.mobileanwendungen.drawingapp.BluetoothActivity;
+import com.mobileanwendungen.drawingapp.DeviceClickListener;
 import com.mobileanwendungen.drawingapp.R;
+import com.mobileanwendungen.drawingapp.UIHelper;
 import com.mobileanwendungen.drawingapp.bluetooth.BroadcastReceivers.BluetoothBroadcastReceiver;
 import com.mobileanwendungen.drawingapp.bluetooth.BroadcastReceivers.BondStateChangedBroadcastReceiver;
 import com.mobileanwendungen.drawingapp.bluetooth.BroadcastReceivers.DiscoverBroadcastReceiver;
@@ -33,6 +36,8 @@ public class BluetoothController {
 
     private BluetoothActivity bluetoothActivity;
     private BluetoothAdapter bluetoothAdapter;
+
+    private UIHelper uiHelper;
 
     // BroadcastReceivers
     private BluetoothBroadcastReceiver stateChangedBroadcastReceiver;
@@ -61,8 +66,11 @@ public class BluetoothController {
 
     public void init(BluetoothActivity bluetoothActivity) {
         this.bluetoothActivity = bluetoothActivity;
-        bluetoothDevices = new BluetoothDevices();
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        uiHelper = new UIHelper(bluetoothActivity);
+        bluetoothDevices = new BluetoothDevices();
+        bluetoothActivity.getDevicesView().setOnItemClickListener(new DeviceClickListener(this));
 
         discoverBroadcastReceiver = new DiscoverBroadcastReceiver(bluetoothActivity);
         scanModeChangedBroadcastReceiver = new ScanModeChangedBroadcastReceiver(bluetoothActivity);
@@ -71,19 +79,19 @@ public class BluetoothController {
 
         // if bluetooth is already on when entering the bluetooth activity
         if (bluetoothAdapter.isEnabled()) {
-            newBluetoothConnectionService();
+            onBluetoothOn();
             // register receiver in case of error with bluetoothAdapter
             IntentFilter BTIntent = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
             bluetoothActivity.registerReceiver(stateChangedBroadcastReceiver, BTIntent);
         }
     }
 
-    public void newBluetoothConnectionService() {
-        // prevent btConnectionService thread from "restarting" itself, should only be started from a UI thread (because of handler)
-        bluetoothActivity.runOnUiThread(() -> {
-            bluetoothConnectionService = new BluetoothConnectionService();
-            bluetoothConnectionService.start();
-        });
+    public void onBluetoothOn() {
+        // necessary because bonded devices can only be gotten when bluetooth is enabled
+        setBondedDevices();
+        uiHelper.setVisible(bluetoothActivity.getDevicesView());
+
+        newBluetoothConnectionService();
     }
 
     public BluetoothConnectionService getBluetoothConnectionService() {
@@ -101,8 +109,6 @@ public class BluetoothController {
         }
         if (!bluetoothAdapter.isEnabled()) {
             Log.d(TAG, "toggleBluetooth: enabling BT");
-            bluetoothDevices.addAllBonded(getBondedDevices());
-            bluetoothActivity.listViewDevices.setVisibility(View.VISIBLE);
             Intent enableBTIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             bluetoothActivity.startActivity(enableBTIntent);
 
@@ -110,7 +116,7 @@ public class BluetoothController {
             bluetoothActivity.registerReceiver(stateChangedBroadcastReceiver, BTIntent);
         }
         else {
-            Log.d(TAG, "toggleBluetooth: stop connection service");
+            Log.d(TAG, "toggleBluetooth: disabling BT");
             waitingForBluetoothDisable = true;
             stopConnection();
         }
@@ -194,42 +200,52 @@ public class BluetoothController {
     }
 
     public void stopConnection() {
+        Log.d(TAG, "stopConnection: stop connection service");
         if (bluetoothConnectionService != null && bluetoothConnectionService.getConnectedThread() != null)
             bluetoothConnectionService.setState(BluetoothConstants.STATE_CLOSE_REQUEST);
+        else if (bluetoothConnectionService != null && bluetoothConnectionService.getConnectedThread() == null) {
+            bluetoothConnectionService.close();
+            //onConnectionClosed();
+        }
+        else if (bluetoothAdapter.isEnabled() && bluetoothConnectionService == null) {
+            Log.d(TAG, "stopConnection: something went wrong, disabling bluetooth");
+            disableBluetooth();
+        }
+        else
+            // just to be safe
+            Log.d(TAG, "stopConnection: ERROR shouldn't get here");
+
     }
 
     public void onConnectionClosed() {
         bluetoothDevices.clearConnected();
-        bluetoothActivity.runOnUiThread(() -> {
-            bluetoothActivity.deviceListAdapter = new DeviceListAdapter(bluetoothActivity, R.layout.device_adapter_view, bluetoothDevices);
-            bluetoothActivity.listViewDevices.setAdapter(bluetoothActivity.deviceListAdapter);
-        });
-        if (waitingForBluetoothDisable) {
-            Log.d(TAG, "connection closed");
+        updateUI();
+
+        if (!bluetoothAdapter.isEnabled()) {
+            // bluetooth was turned off surprisingly
+            bluetoothConnectionService = null;
+            uiHelper.setInvisible(bluetoothActivity.getDevicesView());
+        }
+        else if (waitingForBluetoothDisable) {
+            // bluetooth is to be turned off
             bluetoothConnectionService = null;
             disableBluetooth();
-        } else {
+        }
+        else {
+            // start a new connection service
             newBluetoothConnectionService();
         }
     }
 
-    public void onState(int connectionState) {
-        // TODO: refactor this
-        switch (connectionState) {
-            case BluetoothConstants.STATE_CONNECTED:
-                // update UI
-                try {
-                    bluetoothDevices.setConnected(bluetoothConnectionService.getRemoteDevice());
-                } catch (BluetoothConnectionException e) {
-                    e.printStackTrace();
-                }
-                bluetoothActivity.runOnUiThread(() -> {
-                    bluetoothActivity.deviceListAdapter = new DeviceListAdapter(bluetoothActivity, R.layout.device_adapter_view, bluetoothDevices);
-                    bluetoothActivity.listViewDevices.setAdapter(bluetoothActivity.deviceListAdapter);
-                });
-                break;
+    public void onEstablishedConnection() {
+        try {
+            bluetoothDevices.setConnected(bluetoothConnectionService.getRemoteDevice());
+        } catch (BluetoothConnectionException e) {
+            e.printStackTrace();
         }
+        updateUI();
     }
+
 
     // --------------
 
@@ -241,15 +257,34 @@ public class BluetoothController {
         bluetoothActivity.unregisterReceiver(scanModeChangedBroadcastReceiver);
         bluetoothActivity.unregisterReceiver(discoverBroadcastReceiver);
         bluetoothActivity.unregisterReceiver(bondStateChangedBroadcastReceiver);
+        if (bluetoothConnectionService != null) {
+            bluetoothConnectionService.close();
+        }
     }
 
-    public List<BluetoothDevice> getBondedDevices() {
+    private List<BluetoothDevice> getBondedDevices() {
         List<BluetoothDevice> list = new ArrayList<>();
         list.addAll(bluetoothAdapter.getBondedDevices());
         return list;
     }
 
+    private void setBondedDevices() {
+        bluetoothDevices.addAllBonded(getBondedDevices());
+        updateUI();
+    }
 
+    public void updateUI() {
+        uiHelper.update(bluetoothDevices);
+    }
+
+    private void newBluetoothConnectionService() {
+        // TODO: fix quickfix
+        // prevent btConnectionService thread from "restarting" itself, should only be started from a UI thread (because of handler)
+        bluetoothActivity.runOnUiThread(() -> {
+            bluetoothConnectionService = new BluetoothConnectionService();
+            bluetoothConnectionService.start();
+        });
+    }
 
     private void createBond(BluetoothDevice device) {
         // TODO: FRAGE: receivers get register multiple times ... unregister it, if it's already existing? or skip it?
@@ -267,9 +302,7 @@ public class BluetoothController {
     private void disableBluetooth() {
         waitingForBluetoothDisable = false;
         Log.d(TAG, "disableBluetooth: disable bluetooth");
-        bluetoothActivity.runOnUiThread(() -> {
-            bluetoothActivity.listViewDevices.setVisibility(View.INVISIBLE);
-        });
+        uiHelper.setInvisible(bluetoothActivity.getDevicesView());
         bluetoothAdapter.disable();
         IntentFilter BTIntent = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         bluetoothActivity.registerReceiver(stateChangedBroadcastReceiver, BTIntent);

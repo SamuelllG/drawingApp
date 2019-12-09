@@ -15,46 +15,31 @@ import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
 import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothDevices;
 import com.mobileanwendungen.drawingapp.bluetooth.Utils.DeviceListAdapter;
 
-public class BluetoothActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
+public class BluetoothActivity extends AppCompatActivity {
     private static final String TAG = "cust.BluetoothActivity";
-    //private static BluetoothActivity bluetoothActivity;
-
-
-
-    //public static BluetoothActivity getBluetoothActivity() {
-        //return bluetoothActivity;
-    //}
 
     private BluetoothController bluetoothController;
-
-    public DeviceListAdapter deviceListAdapter;
-    public ListView listViewDevices;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bluetooth);
 
-        //TODO: FRAGE: recyclerview
-        //bluetoothActivity = this;
-
         bluetoothController = BluetoothController.getBluetoothController();
         bluetoothController.init(this);
-
-        listViewDevices = (ListView) findViewById(R.id.listViewDevices);
-        // set bonded devices
-        setBondedDevices();
-
-
-        listViewDevices.setOnItemClickListener(this);
     }
 
-    private void setBondedDevices() {
-        bluetoothController.getBluetoothDevices().addAllBonded(bluetoothController.getBondedDevices());
-        deviceListAdapter = new DeviceListAdapter(this, R.layout.device_adapter_view, bluetoothController.getBluetoothDevices());
-        listViewDevices.setAdapter(deviceListAdapter);
+    @Override
+    protected void onDestroy() {
+        Log.d(TAG, "onDestroy: called");
+        bluetoothController.cleanup(this);
+        super.onDestroy();
     }
 
+
+    public ListView getDevicesView() {
+        return findViewById(R.id.listViewDevices);
+    }
 
     public void onToggleBluetooth(View view){
         Log.d(TAG, "onClick: toggle bluetooth");
@@ -87,32 +72,5 @@ public class BluetoothActivity extends AppCompatActivity implements AdapterView.
             Log.d(TAG, "onClick: \"Disconnect\" terminate connection");
             bluetoothController.stopConnection();
         }
-    }
-
-    @Override
-    protected void onDestroy() {
-        Log.d(TAG, "onDestroy: called");
-        super.onDestroy();
-        bluetoothController.cleanup(this);
-        // TODO: clean up threads as well
-    }
-
-    @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        BluetoothDevices bluetoothDevices = bluetoothController.getBluetoothDevices();
-        BluetoothDevice device = bluetoothDevices.getDevice(position);
-
-        if (bluetoothDevices.isBonded(device)) {
-            Log.d(TAG, "onItemClick: clicked on a bonded device");
-        } else {
-            Log.d(TAG, "onItemClick: clicked on a device");
-        }
-
-        String deviceName = device.getName();
-        String deviceAddress = device.getAddress();
-        Log.d(TAG, "onItemClick: deviceName = " + deviceName);
-        Log.d(TAG, "onItemClick: deviceAddress = " + deviceAddress);
-
-        bluetoothController.onDeviceClicked(device);
     }
 }

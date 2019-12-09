@@ -31,13 +31,8 @@ public class BondStateChangedBroadcastReceiver extends BluetoothBroadcastReceive
             if (device.getBondState() == BluetoothDevice.BOND_BONDED) {
                 Log.d(TAG, "onReceive: BOND_BONDED");
                 Toast.makeText(bluetoothActivity, bluetoothActivity.getResources().getString(R.string.pairing_successful), Toast.LENGTH_SHORT).show();
-                BluetoothDevices bluetoothDevices = BluetoothController.getBluetoothController().getBluetoothDevices();
-                bluetoothDevices.addBonded(device);
-                bluetoothActivity.deviceListAdapter = new DeviceListAdapter(context, R.layout.device_adapter_view, bluetoothDevices);
-                bluetoothActivity.listViewDevices.setAdapter(bluetoothActivity.deviceListAdapter);
-
-                //BluetoothController bluetoothController = BluetoothController.getBluetoothController();
-                //bluetoothController.onIsBonded(device);
+                BluetoothController.getBluetoothController().getBluetoothDevices().addBonded(device);
+                BluetoothController.getBluetoothController().updateUI();
             }
             // creating a bond
             if (device.getBondState() == BluetoothDevice.BOND_BONDING) {

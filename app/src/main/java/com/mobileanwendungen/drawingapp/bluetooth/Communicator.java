@@ -5,9 +5,14 @@ import android.util.Log;
 import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
 
 
-public class RequestHandler {
-    private static final String TAG = "cust.RequestHandler";
+public class Communicator {
+    private static final String TAG = "cust.Communicator";
 
+    private BluetoothConnectionService bluetoothConnectionService;
+
+    public Communicator (BluetoothConnectionService bluetoothConnectionService) {
+        this.bluetoothConnectionService = bluetoothConnectionService;
+    }
 
     public synchronized void processRequest (String request) {
         /*if (BluetoothConnectionService.connectRequestReceived) {
@@ -33,13 +38,13 @@ public class RequestHandler {
             case BluetoothConstants.REQUEST_ESTABLISHED_CONNECTION:
                 Log.d(TAG, "processRequest: established connection was requested");
                 Log.d(TAG, "processRequest: immediately confirm established connection");
-                BluetoothController.getBluetoothController().getBluetoothConnectionService().write(BluetoothConstants.CONFIRM_ESTABLISHED_CONNECTION.getBytes());
+                bluetoothConnectionService.write(BluetoothConstants.CONFIRM_ESTABLISHED_CONNECTION.getBytes());
                 break;
             case BluetoothConstants.REQUEST_CLOSE_CONNECTION:
                 Log.d(TAG, "processRequest: close connection was requested");
                 Log.d(TAG, "processRequest: immediately confirm close connection");
-                BluetoothController.getBluetoothController().getBluetoothConnectionService().write(BluetoothConstants.CONFIRM_CLOSE_CONNECTION.getBytes());
-                BluetoothController.getBluetoothController().getBluetoothConnectionService().setState(BluetoothConstants.STATE_CLOSING);
+                bluetoothConnectionService.write(BluetoothConstants.CONFIRM_CLOSE_CONNECTION.getBytes());
+                bluetoothConnectionService.setState(BluetoothConstants.STATE_CLOSING);
                 break;
             /*case BluetoothConstants.REQUEST_CONNECT:
                 Log.d(TAG, "checkForRequest: connect request received");
@@ -72,12 +77,11 @@ public class RequestHandler {
         switch (response) {
             case BluetoothConstants.CONFIRM_ESTABLISHED_CONNECTION:
                 Log.d(TAG, "response: established connection was confirmed");
-                BluetoothController.getBluetoothController().getBluetoothConnectionService().setState(BluetoothConstants.STATE_VERIFIED_CONNECTION);
-                BluetoothController.getBluetoothController().onState(BluetoothConstants.STATE_CONNECTED);
+                bluetoothConnectionService.setState(BluetoothConstants.STATE_VERIFIED_CONNECTION);
                 break;
             case BluetoothConstants.CONFIRM_CLOSE_CONNECTION:
                 Log.d(TAG, "response: close connection was confirmed");
-                BluetoothController.getBluetoothController().getBluetoothConnectionService().setState(BluetoothConstants.STATE_CLOSING);
+                bluetoothConnectionService.setState(BluetoothConstants.STATE_CLOSING);
                 break;
             default:
                 Log.d(TAG, "ERROR: you forgot to add the response to the handler ;)");

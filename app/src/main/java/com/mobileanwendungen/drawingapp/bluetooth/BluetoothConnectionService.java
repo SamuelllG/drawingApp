@@ -15,6 +15,7 @@ import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants.STATE_FORCE_CLOSE;
 import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants.STATE_RESTARTING;
 import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants.STATE_SHUT_DOWN;
 import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants.STATE_CLOSED;
@@ -33,14 +34,15 @@ import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstant
 import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants.STATE_VERIFICATION;
 import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants.STATE_VERIFIED_CONNECTION;
 
-public class BluetoothConnectionService extends Thread{
+public class BluetoothConnectionService extends Thread {
     private static final String TAG = "cust.BTConnectService";
 
     private BluetoothAdapter bluetoothAdapter;
     private Handler handler; // handler that gets info from Bluetooth service
 
     private volatile int mState;
-    private int oldState;
+    private int oldState; // this is only for startup
+    private volatile boolean forceClosing;
     private volatile ConnectedThread connectedThread;
     private volatile ConnectThread connectThread;
     private volatile AcceptThread acceptThread;
@@ -53,7 +55,7 @@ public class BluetoothConnectionService extends Thread{
 
     public BluetoothConnectionService() {
         Log.d(TAG, "new BTConnectionService");
-        handler = new RequestHandler();
+        handler = new MessageHandler(this);
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         setState(STATE_NONE);
         oldState = Integer.MAX_VALUE;
@@ -67,6 +69,11 @@ public class BluetoothConnectionService extends Thread{
             if (oldState != mState) {
                 int remember = oldState;
                 oldState = mState; // setting this first is important
+                if (mState == STATE_FORCE_CLOSE) {
+                    forceClosing = true;
+                    onStateChanged(remember);
+                    break; // break the loop -> ignore incoming states
+                }
                 onStateChanged(remember);
             }
         }
@@ -109,6 +116,7 @@ public class BluetoothConnectionService extends Thread{
                 request(BluetoothConstants.REQUEST_ESTABLISHED_CONNECTION);
                 break;
             case STATE_VERIFIED_CONNECTION:
+                BluetoothController.getBluetoothController().onEstablishedConnection();
                 Log.d(TAG, "running...");
                 break;
             case STATE_FAILED:
@@ -137,11 +145,16 @@ public class BluetoothConnectionService extends Thread{
                 Log.d(TAG, "request close connection");
                 request(BluetoothConstants.REQUEST_CLOSE_CONNECTION);
                 break;
+            case STATE_FORCE_CLOSE:
+                // force close by calling onStateChanged directly
+                mState = STATE_CLOSING;
+                onStateChanged(STATE_FORCE_CLOSE);
+                break;
             case STATE_CLOSING:
                 closeAll();
                 break;
             case STATE_CLOSED:
-                setState(BluetoothConstants.STATE_SHUT_DOWN);
+                setState(BluetoothConstants.STATE_SHUT_DOWN); // if force closing can be ignored because thread loop already finished
                 BluetoothController.getBluetoothController().onConnectionClosed();
                 Log.d(TAG, "-----------------------------------------------------------------");
                 break;
@@ -232,7 +245,12 @@ public class BluetoothConnectionService extends Thread{
 
         if (mState == STATE_CLOSING && connectedThread == null && connectThread == null && acceptThread == null) {
             Log.d(TAG, "no open threads");
-            setState(STATE_CLOSED);
+            if (forceClosing) {
+                mState = STATE_CLOSED;
+                onStateChanged(STATE_CLOSING);
+            } else {
+                setState(STATE_CLOSED);
+            }
         } else if (connectedThread == null && connectThread == null && acceptThread == null) {
             Log.d(TAG, "no open threads");
         }
@@ -320,6 +338,11 @@ public class BluetoothConnectionService extends Thread{
     }
 
     public synchronized void setState(int state) {
+        if (forceClosing) {
+            // don't log incoming states when force closing
+            Log.d(TAG, "IGNORING STATE... FORCE CLOSING");
+            return;
+        }
         String name;
         switch (state) {
             case STATE_NONE:
@@ -373,6 +396,9 @@ public class BluetoothConnectionService extends Thread{
             case STATE_RESTARTING:
                 name = "STATE_RESTARTING";
                 break;
+            case STATE_FORCE_CLOSE:
+                name = "STATE_FORCE_CLOSE";
+                break;
             default:
                 name = "STATE NOT FOUND";
         }
@@ -398,5 +424,14 @@ public class BluetoothConnectionService extends Thread{
 
     public ConnectedThread getConnectedThread() {
         return connectedThread;
+    }
+
+    public void close() {
+        Log.d(TAG, "close");
+        setState(BluetoothConstants.STATE_CLOSING);
+        if (timeoutThread != null) {
+            //timeoutThread.cancel();
+            timeoutThread = null;
+        }
     }
 }

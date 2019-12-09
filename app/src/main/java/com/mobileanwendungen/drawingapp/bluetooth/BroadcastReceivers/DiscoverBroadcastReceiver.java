@@ -33,8 +33,7 @@ public class DiscoverBroadcastReceiver extends BluetoothBroadcastReceiver {
                 bluetoothDevices.addDevice(device);
                 Log.d(TAG, "onReceive: " + device.getName() + ": " + device.getAddress());
                 bluetoothDevices.addDevice(device);
-                bluetoothActivity.deviceListAdapter = new DeviceListAdapter(context, R.layout.device_adapter_view, bluetoothDevices);
-                bluetoothActivity.listViewDevices.setAdapter(bluetoothActivity.deviceListAdapter);
+                BluetoothController.getBluetoothController().updateUI();
             }
             else {
                 Log.d(TAG, "onReceive: duplicate device " + device.getName() + ": " + device.getAddress());
@@ -46,8 +45,7 @@ public class DiscoverBroadcastReceiver extends BluetoothBroadcastReceiver {
                     bluetoothDevices.removeDevice(device);
                     bluetoothDevices.addDevice(device);
                     Log.d(TAG, "onReceive: updated device " + device.getName() + ": " + device.getAddress());
-                    bluetoothActivity.deviceListAdapter = new DeviceListAdapter(context, R.layout.device_adapter_view, bluetoothDevices);
-                    bluetoothActivity.listViewDevices.setAdapter(bluetoothActivity.deviceListAdapter);
+                    BluetoothController.getBluetoothController().updateUI();
                 }
             }
 
