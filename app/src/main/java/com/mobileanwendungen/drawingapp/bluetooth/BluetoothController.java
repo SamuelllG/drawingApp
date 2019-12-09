@@ -8,9 +8,7 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
-import android.provider.Contacts;
 import android.util.Log;
-import android.view.View;
 import android.widget.Toast;
 
 import com.mobileanwendungen.drawingapp.BluetoothActivity;
@@ -25,7 +23,6 @@ import com.mobileanwendungen.drawingapp.bluetooth.BroadcastReceivers.StateChange
 import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConnectionException;
 import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
 import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothDevices;
-import com.mobileanwendungen.drawingapp.bluetooth.Utils.DeviceListAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +44,7 @@ public class BluetoothController {
 
     private BluetoothConnectionService bluetoothConnectionService;
     private BluetoothDevices bluetoothDevices;
-    private boolean waitingForBluetoothDisable;
+    private boolean bluetoothWasDisabled;
 
 
     private BluetoothController() {
@@ -116,9 +113,11 @@ public class BluetoothController {
             bluetoothActivity.registerReceiver(stateChangedBroadcastReceiver, BTIntent);
         }
         else {
-            Log.d(TAG, "toggleBluetooth: disabling BT");
-            waitingForBluetoothDisable = true;
-            stopConnection();
+            Log.d(TAG, "toggleBluetooth: disable bluetooth");
+            bluetoothWasDisabled = true;
+            bluetoothAdapter.disable();
+            IntentFilter BTIntent = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+            bluetoothActivity.registerReceiver(stateChangedBroadcastReceiver, BTIntent);
         }
 
     }
@@ -209,7 +208,7 @@ public class BluetoothController {
         }
         else if (bluetoothAdapter.isEnabled() && bluetoothConnectionService == null) {
             Log.d(TAG, "stopConnection: something went wrong, disabling bluetooth");
-            disableBluetooth();
+            bluetoothAdapter.disable();
         }
         else
             // just to be safe
@@ -218,18 +217,14 @@ public class BluetoothController {
     }
 
     public void onConnectionClosed() {
+        bluetoothWasDisabled = false; // reset this
         bluetoothDevices.clearConnected();
         updateUI();
 
         if (!bluetoothAdapter.isEnabled()) {
-            // bluetooth was turned off surprisingly
+            // bluetooth was turned off
             bluetoothConnectionService = null;
             uiHelper.setInvisible(bluetoothActivity.getDevicesView());
-        }
-        else if (waitingForBluetoothDisable) {
-            // bluetooth is to be turned off
-            bluetoothConnectionService = null;
-            disableBluetooth();
         }
         else {
             // start a new connection service
@@ -260,6 +255,10 @@ public class BluetoothController {
         if (bluetoothConnectionService != null) {
             bluetoothConnectionService.close();
         }
+    }
+
+    public boolean getBluetoothWasDisabled() {
+        return bluetoothWasDisabled;
     }
 
     private List<BluetoothDevice> getBondedDevices() {
@@ -297,15 +296,6 @@ public class BluetoothController {
             Log.d(TAG, "createBond: trying to pair with " + device.getName());
             device.createBond();
         }
-    }
-
-    private void disableBluetooth() {
-        waitingForBluetoothDisable = false;
-        Log.d(TAG, "disableBluetooth: disable bluetooth");
-        uiHelper.setInvisible(bluetoothActivity.getDevicesView());
-        bluetoothAdapter.disable();
-        IntentFilter BTIntent = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-        bluetoothActivity.registerReceiver(stateChangedBroadcastReceiver, BTIntent);
     }
 
     // TODO: clear list if bluetooth disabled, remove devices from list that are not found anymore

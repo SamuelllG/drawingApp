@@ -31,9 +31,12 @@ public class StateChangedBroadcastReceiver extends BluetoothBroadcastReceiver {
                     break;
                 case BluetoothAdapter.STATE_TURNING_OFF:
                     Log.d(TAG, "onReceive: STATE TURNING OFF");
-                    if (BluetoothController.getBluetoothController().getBluetoothConnectionService() != null) {
+                    if (BluetoothController.getBluetoothController().getBluetoothWasDisabled())
+                        // bluetooth was turned off via the app
+                        BluetoothController.getBluetoothController().stopConnection();
+                    else if (BluetoothController.getBluetoothController().getBluetoothConnectionService() != null)
+                        // bluetooth was turned off surprisingly
                         BluetoothController.getBluetoothController().getBluetoothConnectionService().setState(BluetoothConstants.STATE_FORCE_CLOSE);
-                    }
                     break;
                 case BluetoothAdapter.STATE_ON:
                     Log.d(TAG, "onReceive: STATE ON");
