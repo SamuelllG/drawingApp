@@ -77,8 +77,6 @@ public class DrawingView extends View {
         for (Integer key : pathMap.keySet()) {
             canvas.drawPath(pathMap.get(key), paintLine);
         }
-
-        //canvas.drawCircle(getMeasuredWidth()/2, getMeasuredHeight()/2, 78, paintLine);
     }
 
     @Override
@@ -99,8 +97,6 @@ public class DrawingView extends View {
 
         invalidate(); // redraw screen
         return true;
-
-        //Log.d("Screen touched", "yoyoyo");
     }
 
     public void setDrawingColor(int color) {
@@ -138,7 +134,6 @@ public class DrawingView extends View {
             pathMap.put(pointerId, path);
             point = new Point();
             previousPointMap.put(pointerId, point);
-
         }
 
         // move to coord of the touch
@@ -148,13 +143,15 @@ public class DrawingView extends View {
 
     }
 
+    // TODO: call touchStarted, Moved, Ended for remote as well, transfer MotionEvent!
+
     private void touchMoved(MotionEvent event) {
         for (int i = 0; i < event.getPointerCount(); i++) {
             // loop necessary?
             int pointerId = event.getPointerId(i);
             int pointerIndex = event.findPointerIndex(pointerId);
 
-            if (pathMap.containsKey((pointerId))) {
+            if (pathMap.containsKey(pointerId)) {
                 float newX = event.getX(pointerIndex);
                 float newY = event.getY(pointerIndex);
 

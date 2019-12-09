@@ -53,7 +53,7 @@ public class BluetoothConnectionService extends Thread{
 
     public BluetoothConnectionService() {
         Log.d(TAG, "new BTConnectionService");
-        handler = new MyHandler();
+        handler = new RequestHandler();
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         setState(STATE_NONE);
         oldState = Integer.MAX_VALUE;
