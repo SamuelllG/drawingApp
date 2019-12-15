@@ -12,12 +12,15 @@ import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothDevices;
 import com.mobileanwendungen.drawingapp.bluetooth.Utils.DeviceListAdapter;
 
 public class DiscoverBroadcastReceiver extends BluetoothBroadcastReceiver {
+    private static final String TAG = "cust.DiscoverableBR";
 
-    public static final String TAG = "cust.DiscoverableBR";
-    /*private BluetoothActivity bluetoothActivity;*/
+    private BluetoothDevices bluetoothDevices;
+    private BluetoothController bluetoothController;
 
-    public DiscoverBroadcastReceiver (BluetoothActivity bluetoothActivity) {
+    public DiscoverBroadcastReceiver (BluetoothActivity bluetoothActivity, BluetoothController bluetoothController) {
         super(bluetoothActivity);
+        this.bluetoothController = bluetoothController;
+        this.bluetoothDevices = bluetoothController.getBluetoothDevices();
     }
 
     @Override
@@ -25,27 +28,24 @@ public class DiscoverBroadcastReceiver extends BluetoothBroadcastReceiver {
         String action = intent.getAction();
         if (action.equals(BluetoothDevice.ACTION_FOUND)) {
             Log.d(TAG, "onReceive: ACTION FOUND");
-
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-            BluetoothDevices bluetoothDevices = BluetoothController.getBluetoothController().getBluetoothDevices();
             //TODO: clean that up
             if (!bluetoothDevices.getDevices().contains(device)) {
-                bluetoothDevices.addDevice(device);
                 Log.d(TAG, "onReceive: " + device.getName() + ": " + device.getAddress());
                 bluetoothDevices.addDevice(device);
-                BluetoothController.getBluetoothController().updateUI();
+                bluetoothController.updateUI();
             }
             else {
                 Log.d(TAG, "onReceive: duplicate device " + device.getName() + ": " + device.getAddress());
                 int index = bluetoothDevices.getDevices().indexOf(device);
                 BluetoothDevice existing = bluetoothDevices.getDevice(index);
                 // TODO implement correctly
-                if (existing.getName() == null) {
+                if (existing.getName() == null || existing.getName().equals("")) {
                     //bluetoothActivity.newDevices.remove(index);
                     bluetoothDevices.removeDevice(device);
                     bluetoothDevices.addDevice(device);
                     Log.d(TAG, "onReceive: updated device " + device.getName() + ": " + device.getAddress());
-                    BluetoothController.getBluetoothController().updateUI();
+                    bluetoothController.updateUI();
                 }
             }
 

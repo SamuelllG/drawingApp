@@ -2,6 +2,7 @@ package com.mobileanwendungen.drawingapp;
 
 import android.view.View;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothDevices;
 import com.mobileanwendungen.drawingapp.bluetooth.Utils.DeviceListAdapter;
@@ -32,6 +33,12 @@ public class UIHelper {
     public void setInvisible(ListView listView) {
         bluetoothActivity.runOnUiThread(() -> {
             listView.setVisibility(View.INVISIBLE);
+        });
+    }
+
+    public void makeToast(int textId, int duration) {
+        bluetoothActivity.runOnUiThread(() -> {
+            Toast.makeText(bluetoothActivity, textId, duration);
         });
     }
 

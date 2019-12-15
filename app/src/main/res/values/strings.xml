@@ -26,4 +26,6 @@
     <string name="clicked_bonded">Already bonded</string>
     <string name="already_bonded">Already bonded</string>
     <string name="bonded">Bonded</string>
+    <string name="restart_failed">Reconnect failed, try again</string>
+    <string name="unable_to_connect">Device not available</string>
 </resources>

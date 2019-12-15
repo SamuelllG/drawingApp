@@ -5,7 +5,11 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.os.Handler;
 import android.util.Log;
+import android.widget.Toast;
 
+import com.mobileanwendungen.drawingapp.BluetoothActivity;
+import com.mobileanwendungen.drawingapp.R;
+import com.mobileanwendungen.drawingapp.UIHelper;
 import com.mobileanwendungen.drawingapp.bluetooth.Threads.AcceptThread;
 import com.mobileanwendungen.drawingapp.bluetooth.Threads.ConnectThread;
 import com.mobileanwendungen.drawingapp.bluetooth.Threads.ConnectedThread;
@@ -15,6 +19,7 @@ import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants.MESSAGE_TOAST;
 import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants.STATE_FORCE_CLOSE;
 import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants.STATE_RESTARTING;
 import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants.STATE_SHUT_DOWN;
@@ -38,6 +43,8 @@ public class BluetoothConnectionService extends Thread {
     private static final String TAG = "cust.BTConnectService";
 
     private BluetoothAdapter bluetoothAdapter;
+    private BluetoothController bluetoothController;
+    private UIHelper uiHelper;
     private Handler handler; // handler that gets info from Bluetooth service
 
     private volatile int mState;
@@ -53,10 +60,12 @@ public class BluetoothConnectionService extends Thread {
     private BluetoothDevice remoteDevice;
 
 
-    public BluetoothConnectionService() {
+    public BluetoothConnectionService(BluetoothController bluetoothController, UIHelper uiHelper) {
         Log.d(TAG, "new BTConnectionService");
         handler = new MessageHandler(this);
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        this.bluetoothController = bluetoothController;
+        this.uiHelper = uiHelper;
         setState(STATE_NONE);
         oldState = Integer.MAX_VALUE;
     }
@@ -116,24 +125,31 @@ public class BluetoothConnectionService extends Thread {
                 request(BluetoothConstants.REQUEST_ESTABLISHED_CONNECTION);
                 break;
             case STATE_VERIFIED_CONNECTION:
-                BluetoothController.getBluetoothController().onEstablishedConnection();
+                bluetoothController.onEstablishedConnection();
                 Log.d(TAG, "running...");
                 break;
             case STATE_FAILED:
                 Log.d(TAG, "ERROR: FAILED");
+                bluetoothController.getBluetoothDevices().clearConnected();
+                bluetoothController.updateUI();
                 setState(STATE_INIT_RESTART);
                 break;
             case STATE_UNABLE_TO_CONNECT:
                 Log.d(TAG, "other device is not available");
+                uiHelper.makeToast(R.string.unable_to_connect, Toast.LENGTH_LONG);
                 // do nothing, keep listening
                 setState(STATE_LISTEN);
                 break;
             case STATE_INTERRUPTED:
                 Log.d(TAG, "ERROR: connection interrupted");
+                bluetoothController.getBluetoothDevices().clearConnected();
+                bluetoothController.updateUI();
                 setState(STATE_INIT_RESTART);
                 break;
             case STATE_TIMEOUT:
                 Log.d(TAG, " --/ timeout /--");
+                bluetoothController.getBluetoothDevices().clearConnected();
+                bluetoothController.updateUI();
                 if (oldState == STATE_CLOSE_REQUEST) {
                     Log.d(TAG, "force closing...");
                     setState(STATE_CLOSING);
@@ -155,7 +171,7 @@ public class BluetoothConnectionService extends Thread {
                 break;
             case STATE_CLOSED:
                 setState(BluetoothConstants.STATE_SHUT_DOWN); // if force closing can be ignored because thread loop already finished
-                BluetoothController.getBluetoothController().onConnectionClosed();
+                bluetoothController.onConnectionClosed();
                 Log.d(TAG, "-----------------------------------------------------------------");
                 break;
             case STATE_INIT_RESTART:
@@ -277,8 +293,8 @@ public class BluetoothConnectionService extends Thread {
             // either something went wrong or more likely this is the second try (RESTARTING)
             // should only try once
             Log.d(TAG, "no remote device");
-            //MAKETOAST connection failed, try again
-            // close connection (+restart)
+            //connection failed, try again
+            uiHelper.makeToast(R.string.restart_failed, Toast.LENGTH_LONG);
             setState(STATE_CLOSING);
         }
     }

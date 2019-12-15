@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothDevice;
 import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConnectionException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class BluetoothDevices {
@@ -44,10 +45,29 @@ public class BluetoothDevices {
             int index = devices.indexOf(device);
             bonded.add(index);
         }
+        sort();
     }
     public void addAllBonded(List<BluetoothDevice> devices) {
         for (BluetoothDevice device : devices) {
             addBonded(device);
+        }
+    }
+// TODO: TEST SORT METHOD
+    private void sort() {
+        int firstUnbonded = -1;
+        for (int i = 0; i < devices.size(); i++) {
+            if (isBonded(devices.get(i))) {
+                if (firstUnbonded != -1) {
+                    // swap firstUnbonded with i
+                    BluetoothDevice temp = devices.get(firstUnbonded);
+                    devices.set(firstUnbonded, devices.get(i));
+                    firstUnbonded += 1;
+                    devices.set(i, temp);
+                }
+                // else do nothing, we are still going through bonded devices
+            }
+            else
+                firstUnbonded = i;
         }
     }
 /*

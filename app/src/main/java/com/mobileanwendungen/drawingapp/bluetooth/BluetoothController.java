@@ -5,6 +5,7 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
@@ -69,7 +70,7 @@ public class BluetoothController {
         bluetoothDevices = new BluetoothDevices();
         bluetoothActivity.getDevicesView().setOnItemClickListener(new DeviceClickListener(this));
 
-        discoverBroadcastReceiver = new DiscoverBroadcastReceiver(bluetoothActivity);
+        discoverBroadcastReceiver = new DiscoverBroadcastReceiver(bluetoothActivity, this);
         scanModeChangedBroadcastReceiver = new ScanModeChangedBroadcastReceiver(bluetoothActivity);
         stateChangedBroadcastReceiver = new StateChangedBroadcastReceiver(bluetoothActivity);
         bondStateChangedBroadcastReceiver = new BondStateChangedBroadcastReceiver(bluetoothActivity);
@@ -77,9 +78,6 @@ public class BluetoothController {
         // if bluetooth is already on when entering the bluetooth activity
         if (bluetoothAdapter.isEnabled()) {
             onBluetoothOn();
-            // register receiver in case of error with bluetoothAdapter
-            IntentFilter BTIntent = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-            bluetoothActivity.registerReceiver(stateChangedBroadcastReceiver, BTIntent);
         }
     }
 
@@ -87,6 +85,8 @@ public class BluetoothController {
         // necessary because bonded devices can only be gotten when bluetooth is enabled
         setBondedDevices();
         uiHelper.setVisible(bluetoothActivity.getDevicesView());
+
+        registerReceivers();
 
         newBluetoothConnectionService();
     }
@@ -108,16 +108,11 @@ public class BluetoothController {
             Log.d(TAG, "toggleBluetooth: enabling BT");
             Intent enableBTIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             bluetoothActivity.startActivity(enableBTIntent);
-
-            IntentFilter BTIntent = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-            bluetoothActivity.registerReceiver(stateChangedBroadcastReceiver, BTIntent);
         }
         else {
             Log.d(TAG, "toggleBluetooth: disable bluetooth");
             bluetoothWasDisabled = true;
             bluetoothAdapter.disable();
-            IntentFilter BTIntent = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-            bluetoothActivity.registerReceiver(stateChangedBroadcastReceiver, BTIntent);
         }
 
     }
@@ -128,9 +123,6 @@ public class BluetoothController {
         Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
         discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120);
         bluetoothActivity.startActivity(discoverableIntent);
-
-        IntentFilter intentFilter = new IntentFilter(bluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
-        bluetoothActivity.registerReceiver(scanModeChangedBroadcastReceiver, intentFilter);
     }
 
     public void cancelDiscovery() {
@@ -147,8 +139,6 @@ public class BluetoothController {
             checkPermissions();
 
             bluetoothAdapter.startDiscovery();
-            IntentFilter discoverDevicesIntent = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-            bluetoothActivity.registerReceiver(discoverBroadcastReceiver, discoverDevicesIntent);
         }
         if (!bluetoothAdapter.isDiscovering()) {
             Log.d(TAG, "discover: looking for unpaired devices");
@@ -157,8 +147,6 @@ public class BluetoothController {
             checkPermissions();
 
             bluetoothAdapter.startDiscovery();
-            IntentFilter discoverDevicesIntent = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-            bluetoothActivity.registerReceiver(discoverBroadcastReceiver, discoverDevicesIntent);
         }
     }
 
@@ -247,11 +235,11 @@ public class BluetoothController {
 
 
 
-    public void cleanup(Activity bluetoothActivity) {
-        bluetoothActivity.unregisterReceiver(stateChangedBroadcastReceiver);
-        bluetoothActivity.unregisterReceiver(scanModeChangedBroadcastReceiver);
-        bluetoothActivity.unregisterReceiver(discoverBroadcastReceiver);
-        bluetoothActivity.unregisterReceiver(bondStateChangedBroadcastReceiver);
+    public void cleanup() {
+        unregister(stateChangedBroadcastReceiver);
+        unregister(scanModeChangedBroadcastReceiver);
+        unregister(discoverBroadcastReceiver);
+        unregister(bondStateChangedBroadcastReceiver);
         if (bluetoothConnectionService != null) {
             bluetoothConnectionService.close();
         }
@@ -259,6 +247,29 @@ public class BluetoothController {
 
     public boolean getBluetoothWasDisabled() {
         return bluetoothWasDisabled;
+    }
+
+    private void unregister(BroadcastReceiver broadcastReceiver) {
+        try {
+            bluetoothActivity.unregisterReceiver(broadcastReceiver);
+        } catch (IllegalArgumentException e) {
+            // wasn't registered, do nothing
+            // this is the only solution since you cannot check for registered receivers
+        }
+    }
+
+    private void registerReceivers() {
+        IntentFilter BTIntent = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+        bluetoothActivity.registerReceiver(stateChangedBroadcastReceiver, BTIntent);
+
+        IntentFilter intentFilter = new IntentFilter(bluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
+        bluetoothActivity.registerReceiver(scanModeChangedBroadcastReceiver, intentFilter);
+
+        IntentFilter discoverDevicesIntent = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        bluetoothActivity.registerReceiver(discoverBroadcastReceiver, discoverDevicesIntent);
+
+        IntentFilter filter = new IntentFilter((BluetoothDevice.ACTION_BOND_STATE_CHANGED));
+        bluetoothActivity.registerReceiver(bondStateChangedBroadcastReceiver, filter);
     }
 
     private List<BluetoothDevice> getBondedDevices() {
@@ -280,7 +291,7 @@ public class BluetoothController {
         // TODO: fix quickfix
         // prevent btConnectionService thread from "restarting" itself, should only be started from a UI thread (because of handler)
         bluetoothActivity.runOnUiThread(() -> {
-            bluetoothConnectionService = new BluetoothConnectionService();
+            bluetoothConnectionService = new BluetoothConnectionService(this, uiHelper);
             bluetoothConnectionService.start();
         });
     }
@@ -288,8 +299,6 @@ public class BluetoothController {
     private void createBond(BluetoothDevice device) {
         // TODO: FRAGE: receivers get register multiple times ... unregister it, if it's already existing? or skip it?
         cancelDiscovery();
-        IntentFilter filter = new IntentFilter((BluetoothDevice.ACTION_BOND_STATE_CHANGED));
-        bluetoothActivity.registerReceiver(bondStateChangedBroadcastReceiver, filter);
         // create bond
         // requires API 19+
         if(Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR2) {

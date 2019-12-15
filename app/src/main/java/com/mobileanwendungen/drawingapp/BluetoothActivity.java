@@ -32,7 +32,7 @@ public class BluetoothActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy: called");
-        bluetoothController.cleanup(this);
+        bluetoothController.cleanup();
         super.onDestroy();
     }
 
