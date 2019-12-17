@@ -28,19 +28,21 @@ public class BondStateChangedBroadcastReceiver extends BluetoothBroadcastReceive
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
             // bonded
-            if (device.getBondState() == BluetoothDevice.BOND_BONDED) {
-                Log.d(TAG, "onReceive: BOND_BONDED");
-                Toast.makeText(bluetoothActivity, bluetoothActivity.getResources().getString(R.string.pairing_successful), Toast.LENGTH_SHORT).show();
-                BluetoothController.getBluetoothController().getBluetoothDevices().addBonded(device);
-                BluetoothController.getBluetoothController().updateUI();
-            }
-            // creating a bond
-            if (device.getBondState() == BluetoothDevice.BOND_BONDING) {
-                Log.d(TAG, "onReceive: BOND_BONDING");
-            }
-            // breaking a bond
-            if (device.getBondState() == BluetoothDevice.BOND_NONE) {
-                Log.d(TAG, "onReceive: BOND_NONE");
+            switch(device.getBondState()) {
+                case BluetoothDevice.BOND_BONDED:
+                    Log.d(TAG, "onReceive: BOND_BONDED");
+                    Toast.makeText(bluetoothActivity, bluetoothActivity.getResources().getString(R.string.pairing_successful), Toast.LENGTH_SHORT).show();
+                    BluetoothController.getBluetoothController().getBluetoothDevices().addBonded(device);
+                    BluetoothController.getBluetoothController().updateUI();
+                    break;
+                case BluetoothDevice.BOND_BONDING:
+                    Log.d(TAG, "onReceive: BOND_BONDING");
+                    break;
+                case BluetoothDevice.BOND_NONE:
+                    Log.d(TAG, "onReceive: BOND_NONE");
+                    break;
+                default:
+                    Log.d(TAG, "onReceive: no such state");
             }
         }
     }

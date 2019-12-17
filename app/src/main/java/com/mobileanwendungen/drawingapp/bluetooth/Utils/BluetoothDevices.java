@@ -52,7 +52,7 @@ public class BluetoothDevices {
             addBonded(device);
         }
     }
-// TODO: TEST SORT METHOD
+
     private void sort() {
         int firstUnbonded = -1;
         for (int i = 0; i < devices.size(); i++) {
@@ -61,6 +61,8 @@ public class BluetoothDevices {
                     // swap firstUnbonded with i
                     BluetoothDevice temp = devices.get(firstUnbonded);
                     devices.set(firstUnbonded, devices.get(i));
+                    bonded.remove((Object) i);
+                    bonded.add(firstUnbonded);
                     firstUnbonded += 1;
                     devices.set(i, temp);
                 }
