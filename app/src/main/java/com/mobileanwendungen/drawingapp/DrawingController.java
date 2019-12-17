@@ -35,7 +35,7 @@ public class DrawingController {
     private Activity activity;
     private DrawingView drawingView;
     private WidthSeekBarChangeListener widthSeekBarChangeListener;
-    //private AlertDialog.Builder currentDialogBuilder; //TODO not necessary as field?
+    //private AlertDialog.Builder currentDialogBuilder;
     private AlertDialog currentAlertDialog;
     private String storagePath; // final
     private String fileName; // final
@@ -89,16 +89,12 @@ public class DrawingController {
         currentAlertDialog.dismiss();
     }
 
-
-
     public void clearDrawingView() {
         drawingView.clear();
     }
 
     /**
      * https://stackoverflow.com/questions/17674634/saving-and-reading-bitmaps-images-from-internal-memory-in-android
-     *
-     * @return
      */
     public void saveToInternalStorage() {
         ContextWrapper cw = new ContextWrapper(activity.getApplicationContext());
@@ -112,19 +108,18 @@ public class DrawingController {
             fos = new FileOutputStream(path);
             // Use the compress method on the BitMap object to write image to the OutputStream
             drawingView.getBitmap().compress(Bitmap.CompressFormat.PNG, 100, fos);
-            Toast.makeText(activity, "Saved", Toast.LENGTH_LONG).show();
-
+            Toast.makeText(activity, R.string.saved, Toast.LENGTH_LONG).show();
+/*
             String storagePath = directory.getAbsolutePath();
             String pathConstant = activity.getResources().getString(R.string.STORAGE_PATH);
             if(!storagePath.equals(pathConstant))
                 Log.d(TAG, "saveToInternalStorage: error while saving, path is different from declared constant");
-            else
+            else*/
                 Log.d(TAG, "saveToInternalStorage: saved to " + storagePath);
 
         } catch (Exception e) {
             e.printStackTrace();
             Log.d(TAG, "saveToInternalStorage: error while saving");
-            Toast.makeText(activity, "Error", Toast.LENGTH_LONG).show();
         } finally {
             try {
                 fos.close();
@@ -135,9 +130,6 @@ public class DrawingController {
 
     }
 
-
-    // TODO: all toast strings to res
-
     public void loadFromStorage() {
         try {
             Log.d(TAG, "loadFromStorage: load from " + storagePath);
@@ -146,13 +138,12 @@ public class DrawingController {
             Bitmap b = BitmapFactory.decodeStream(new FileInputStream(f));
             drawingView.setBitmap(b);
 
-            Toast.makeText(activity, "Loaded", Toast.LENGTH_LONG).show();
+            Toast.makeText(activity, R.string.loaded, Toast.LENGTH_LONG).show();
 
         } catch (Exception e) {
-            Toast.makeText(activity, "Error! Could not be loaded", Toast.LENGTH_LONG).show();
+            Toast.makeText(activity, R.string.error_loading, Toast.LENGTH_LONG).show();
             e.printStackTrace();
         }
-
     }
 
 }

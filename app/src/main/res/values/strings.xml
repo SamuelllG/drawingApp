@@ -28,4 +28,7 @@
     <string name="bonded">Bonded</string>
     <string name="restart_failed">Reconnect failed, try again</string>
     <string name="unable_to_connect">Device not available</string>
+    <string name="loaded">Loaded</string>
+    <string name="error_loading">Error! Could not be loaded</string>
+    <string name="saved">Saved</string>
 </resources>
