@@ -25,14 +25,14 @@ public class ScanModeChangedBroadcastReceiver extends BluetoothBroadcastReceiver
 
             switch (mode) {
                 case BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE:
-                    Log.d(TAG, "onReceive: Discoverability enabled");
+                    Log.d(TAG, "onReceive: discoverable");
                     Toast.makeText(bluetoothActivity, context.getText(R.string.BT_DISCOVERABILITY_ON), Toast.LENGTH_SHORT).show();
                     break;
                 case BluetoothAdapter.SCAN_MODE_CONNECTABLE:
-                    Log.d(TAG, "onReceive: Discoverability is disabled, connectable for bonded devices");
+                    Log.d(TAG, "onReceive: connectable");
                     break;
                 case BluetoothAdapter.SCAN_MODE_NONE:
-                    Log.d(TAG, "onReceive:  Discoverability disabled, not receiving connections");
+                    Log.d(TAG, "onReceive: none");
                     break;
                 case BluetoothAdapter.STATE_CONNECTING:
                     Log.d(TAG, "onReceive: Connecting....");

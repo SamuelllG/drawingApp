@@ -7,7 +7,6 @@ import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.mobileanwendungen.drawingapp.BluetoothActivity;
 import com.mobileanwendungen.drawingapp.R;
 import com.mobileanwendungen.drawingapp.UIHelper;
 import com.mobileanwendungen.drawingapp.bluetooth.Threads.AcceptThread;
@@ -19,7 +18,6 @@ import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants.MESSAGE_TOAST;
 import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants.STATE_FORCE_CLOSE;
 import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants.STATE_RESTARTING;
 import static com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants.STATE_SHUT_DOWN;
@@ -171,7 +169,7 @@ public class BluetoothConnectionService extends Thread {
                 break;
             case STATE_CLOSED:
                 setState(BluetoothConstants.STATE_SHUT_DOWN); // if force closing can be ignored because thread loop already finished
-                bluetoothController.onConnectionClosed();
+                bluetoothController.onClosed();
                 Log.d(TAG, "-----------------------------------------------------------------");
                 break;
             case STATE_INIT_RESTART:

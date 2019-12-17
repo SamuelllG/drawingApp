@@ -2,18 +2,14 @@ package com.mobileanwendungen.drawingapp;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.bluetooth.BluetoothDevice;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
-import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothDevices;
-import com.mobileanwendungen.drawingapp.bluetooth.Utils.DeviceListAdapter;
 
 public class BluetoothActivity extends AppCompatActivity {
     private static final String TAG = "cust.BluetoothActivity";
@@ -32,8 +28,22 @@ public class BluetoothActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy: called");
-        bluetoothController.cleanup();
+        bluetoothController.unregisterAll();
         super.onDestroy();
+    }
+
+    @Override
+    protected void onStop() {
+        //Log.d(TAG, "onStop: called");
+        bluetoothController.pauseConnectionService();
+        super.onStop();
+    }
+
+    @Override
+    protected void onRestart() {
+        //Log.d(TAG, "onRestart: called");
+        bluetoothController.resumeConnectionService();
+        super.onRestart();
     }
 
 

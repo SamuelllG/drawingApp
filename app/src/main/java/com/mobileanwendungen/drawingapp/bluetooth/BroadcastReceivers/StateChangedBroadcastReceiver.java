@@ -12,10 +12,13 @@ import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
 
 public class StateChangedBroadcastReceiver extends BluetoothBroadcastReceiver {
-    public static final String TAG = "cust.StateChangedBR";
+    private static final String TAG = "cust.StateChangedBR";
+
+    private BluetoothController bluetoothController;
 
     public StateChangedBroadcastReceiver (BluetoothActivity bluetoothActivity) {
         super(bluetoothActivity);
+        this.bluetoothController = BluetoothController.getBluetoothController();
     }
 
     @Override
@@ -28,33 +31,37 @@ public class StateChangedBroadcastReceiver extends BluetoothBroadcastReceiver {
                 case BluetoothAdapter.STATE_OFF:
                     Log.d(TAG, "onReceive: STATE OFF");
                     Toast.makeText(bluetoothActivity, context.getText(R.string.BT_STATE_OFF), Toast.LENGTH_SHORT).show();
+                    bluetoothController.cleanup();
                     break;
                 case BluetoothAdapter.STATE_TURNING_OFF:
                     Log.d(TAG, "onReceive: STATE TURNING OFF");
-                    if (BluetoothController.getBluetoothController().getBluetoothWasDisabled())
+                    if (bluetoothController.getBluetoothWasDisabled())
                         // bluetooth was turned off via the app
-                        BluetoothController.getBluetoothController().stopConnection();
-                    else if (BluetoothController.getBluetoothController().getBluetoothConnectionService() != null)
+                        bluetoothController.stopConnection();
+                    else if (bluetoothController.getBluetoothConnectionService() != null)
                         // bluetooth was turned off surprisingly
-                        BluetoothController.getBluetoothController().getBluetoothConnectionService().setState(BluetoothConstants.STATE_FORCE_CLOSE);
+                        bluetoothController.getBluetoothConnectionService().setState(BluetoothConstants.STATE_FORCE_CLOSE);
+                    //else if (bluetoothController.getBluetoothConnectionService() == null)
+                        // bluetooth was turned off outside of the activity
+                        //Log.d(TAG, "do nothing");
                     break;
                 case BluetoothAdapter.STATE_ON:
                     Log.d(TAG, "onReceive: STATE ON");
                     Toast.makeText(bluetoothActivity, context.getText(R.string.BT_STATE_ON), Toast.LENGTH_SHORT).show();
-                    if (BluetoothController.getBluetoothController().getBluetoothConnectionService() != null) {
+                    if (bluetoothController.getBluetoothConnectionService() != null) {
                         // was an error --> shut down old connection service
                         Log.d(TAG, "onReceive: error detected");
-                        BluetoothController.getBluetoothController().getBluetoothConnectionService().setState(BluetoothConstants.STATE_CLOSE_REQUEST);
+                        bluetoothController.getBluetoothConnectionService().setState(BluetoothConstants.STATE_CLOSE_REQUEST);
                     }
                     // startListening listening
-                    BluetoothController.getBluetoothController().onBluetoothOn();
+                    bluetoothController.onBluetoothOn();
                     break;
                 case BluetoothAdapter.STATE_TURNING_ON:
                     Log.d(TAG, "onReceive: STATE TURNING ON");
                     break;
                 case BluetoothAdapter.ERROR:
                     Log.d(TAG, "onReceive: ERROR with bluetooth adapter");
-                    BluetoothController.getBluetoothController().getBluetoothConnectionService().setState(BluetoothConstants.STATE_INIT_RESTART);
+                    bluetoothController.getBluetoothConnectionService().setState(BluetoothConstants.STATE_INIT_RESTART);
                     break;
             }
         }
