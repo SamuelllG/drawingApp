@@ -10,6 +10,8 @@ import android.graphics.Path;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Environment;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.provider.MediaStore;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -96,6 +98,10 @@ public class DrawingView extends View {
         }
 
         invalidate(); // redraw screen
+
+        // -------
+
+
         return true;
     }
 
