@@ -11,9 +11,10 @@ import java.util.Arrays;
 public class MessageHandler extends Handler {
     private static final String TAG = "cust.MessageHandler";
 
-    private enum InputType { REQUEST, RESPONSE, DATA };
+    private enum InputType { REQUEST, RESPONSE, DATA, NONE };
     private BluetoothConnectionService bluetoothConnectionService;
     private Communicator communicator;
+    private boolean notifiedData;
 
     public MessageHandler (BluetoothConnectionService bluetoothConnectionService) {
         this.bluetoothConnectionService = bluetoothConnectionService;
@@ -41,6 +42,11 @@ public class MessageHandler extends Handler {
     }
 
     private synchronized void readMessage(byte[] buffer, int numBytes) {
+        if (notifiedData) {
+            Log.d(TAG, "received data");
+            RemoteHandler.getRemoteHandler().receivedData(buffer, numBytes);
+            return;
+        }
         String received = getReceivedString(buffer, numBytes);
         InputType type = checkInputType(received);
         switch (type) {
@@ -54,7 +60,7 @@ public class MessageHandler extends Handler {
                 communicator.processResponse(received);
                 break;
             case DATA:
-                Log.d(TAG, "got data");
+                Log.d(TAG, "data notified");
                 break;
             default:
                 Log.d(TAG, "ERROR: received unidentifiable data");
@@ -70,7 +76,10 @@ public class MessageHandler extends Handler {
             return InputType.REQUEST;
         else if (Arrays.asList(BluetoothConstants.RESPONSES).contains(received))
             return InputType.RESPONSE;
-        else
+        else if (received.equals(BluetoothConstants.NOTIFY_DATA)) {
+            notifiedData = true;
             return InputType.DATA;
+        }
+        return InputType.NONE;
     }
 }

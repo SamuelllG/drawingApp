@@ -30,6 +30,8 @@ public class BluetoothConstants {
     //public static final String CONFIRMED_CONNECT_REQUEST = "CONFIRMED_CONNECT_REQUEST";
 
 
+    public static final String NOTIFY_DATA = "NOTIFY_DATA";
+
     // Requests:
     public static final String[] REQUESTS = {   "REQUEST_ESTABLISHED_CONNECTION",
                                                 "REQUEST_CLOSE_CONNECTION" };
