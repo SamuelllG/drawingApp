@@ -43,6 +43,7 @@ public class DrawingView extends View {
     private Canvas bitmapCanvas;
     private Paint paintScreen;
     private Paint paintLine;
+    //private Paint remotePaintLine;
     private HashMap<Integer, Path>[] pathMap;
     private HashMap<Integer, Point>[] previousPointMap;
 

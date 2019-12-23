@@ -1,5 +1,7 @@
 package com.mobileanwendungen.drawingapp.bluetooth;
 
+import android.annotation.TargetApi;
+import android.nfc.Tag;
 import android.util.Log;
 import android.view.MotionEvent;
 
@@ -14,6 +16,7 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
+import java.util.Base64;
 
 public class RemoteHandler {
     private static final String TAG = "cust.RemoteHandler";
@@ -55,14 +58,15 @@ public class RemoteHandler {
     }
 
     public void write (CustomMotionEvent motionEvent) {
-        byte[] data = null;
+        byte[] bytes = null;
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutput out;
         try {
             out = new ObjectOutputStream(bos);
             out.writeObject(motionEvent);
             out.flush();
-            data = bos.toByteArray();
+            bytes = bos.toByteArray();
+            bytes = Base64.getEncoder().encodeToString(bytes).getBytes();
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -72,26 +76,24 @@ public class RemoteHandler {
                 // ignore close exception
             }
         }
-        Log.d(TAG, "write: notify data");
+        //Log.d(TAG, "write: notify data");
         byte[] b = BluetoothConstants.NOTIFY_DATA.getBytes();
         bluetoothConnectionService.write(BluetoothConstants.NOTIFY_DATA.getBytes());
-        Log.d(TAG, "write: send data");
-        bluetoothConnectionService.write(data);
+        //Log.d(TAG, "write: send data");
+        bluetoothConnectionService.write(bytes);
     }
 
-    public void receivedData(byte[] buffer, int numBytes) {
+    public void receivedData(String received) {
         CustomMotionEvent motionEvent = null;
-        // cut null data
-        byte[] bytes = new byte[numBytes];
-        for (int i = 0; i < numBytes; i++)
-            bytes[i] = buffer[i];
-
+        byte[] bytes = Base64.getDecoder().decode(received);
         ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
         ObjectInput in = null;
         try {
             in = new ObjectInputStream(bis);
             motionEvent = (CustomMotionEvent) in.readObject();
+            //Log.d(TAG, "read object successfully");
         } catch (ClassNotFoundException | IOException e) {
+            Log.e(TAG, e.getMessage());
             e.printStackTrace();
         } finally {
             try {

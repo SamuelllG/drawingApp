@@ -34,6 +34,7 @@ public class BluetoothController {
 
     private BluetoothActivity bluetoothActivity;
     private BluetoothAdapter bluetoothAdapter;
+    private boolean isRunning;
 
     private UIHelper uiHelper;
 
@@ -49,9 +50,7 @@ public class BluetoothController {
     private boolean pause;
 
 
-    private BluetoothController() {
-        //
-    }
+    private BluetoothController() {    }
 
     /**
      * Singleton
@@ -68,7 +67,9 @@ public class BluetoothController {
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
         uiHelper = new UIHelper(bluetoothActivity);
-        bluetoothDevices = new BluetoothDevices();
+        if (!isRunning) {
+            bluetoothDevices = new BluetoothDevices();
+        }
         bluetoothActivity.getDevicesView().setOnItemClickListener(new DeviceClickListener(this));
 
         // BRs ---
@@ -85,6 +86,7 @@ public class BluetoothController {
         if (bluetoothAdapter.isEnabled()) {
             onBluetoothOn();
         }
+        isRunning = true;
     }
 
     public void onBluetoothOn() {
@@ -92,7 +94,8 @@ public class BluetoothController {
         setBondedDevices();
         uiHelper.setVisible(bluetoothActivity.getDevicesView());
 
-        newBluetoothConnectionService();
+        if (bluetoothConnectionService == null)
+            newBluetoothConnectionService();
     }
 
     public BluetoothConnectionService getBluetoothConnectionService() {
@@ -220,6 +223,7 @@ public class BluetoothController {
             // bluetooth was turned off or activity paused
             bluetoothConnectionService = null;
             uiHelper.setInvisible(bluetoothActivity.getDevicesView());
+            isRunning = false;
         }
         else {
             // start a new connection service
@@ -272,11 +276,16 @@ public class BluetoothController {
         //unregister(bondStateChangedBroadcastReceiver);
         if (bluetoothConnectionService != null) {
             bluetoothConnectionService.close();
+            //bluetoothConnectionService = null; is set when blueConnServ finished
         }
     }
 
     public boolean getBluetoothWasDisabled() {
         return bluetoothWasDisabled;
+    }
+
+    public boolean isRunning() {
+        return isRunning;
     }
 
     private void unregister(BroadcastReceiver broadcastReceiver) {

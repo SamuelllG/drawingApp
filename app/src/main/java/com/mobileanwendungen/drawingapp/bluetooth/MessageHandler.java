@@ -25,7 +25,7 @@ public class MessageHandler extends Handler {
     public void handleMessage(Message inputMessage) {
         switch (inputMessage.what) {
             case BluetoothConstants.MESSAGE_READ:
-                readMessage((byte[]) inputMessage.obj, inputMessage.arg1);
+                readMessage((String) inputMessage.obj);
                 break;
             case BluetoothConstants.MESSAGE_WRITE:
                 // not implemented
@@ -41,14 +41,13 @@ public class MessageHandler extends Handler {
         }
     }
 
-    private synchronized void readMessage(byte[] buffer, int numBytes) {
+    private synchronized void readMessage(String received) {
         if (notifiedData) {
             Log.d(TAG, "received data");
             notifiedData = false;
-            RemoteHandler.getRemoteHandler().receivedData(buffer, numBytes);
+            RemoteHandler.getRemoteHandler().receivedData(received);
             return;
         }
-        String received = getReceivedString(buffer, numBytes);
         InputType type = checkInputType(received);
         switch (type) {
             case REQUEST:
@@ -65,7 +64,7 @@ public class MessageHandler extends Handler {
                 notifiedData = true;
                 break;
             default:
-                Log.d(TAG, "ERROR: received unidentifiable data");
+                Log.d(TAG, "ERROR: received unidentifiable data: " + received);
         }
     }
 
