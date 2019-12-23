@@ -6,7 +6,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
-import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
+import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
 
 import java.io.BufferedReader;

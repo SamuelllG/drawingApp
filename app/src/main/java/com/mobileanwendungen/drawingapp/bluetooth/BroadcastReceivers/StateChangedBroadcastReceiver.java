@@ -8,7 +8,7 @@ import android.widget.Toast;
 
 import com.mobileanwendungen.drawingapp.BluetoothActivity;
 import com.mobileanwendungen.drawingapp.R;
-import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
+import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
 
 public class StateChangedBroadcastReceiver extends BluetoothBroadcastReceiver {

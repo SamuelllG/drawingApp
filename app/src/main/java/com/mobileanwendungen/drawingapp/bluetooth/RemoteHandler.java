@@ -1,12 +1,9 @@
 package com.mobileanwendungen.drawingapp.bluetooth;
 
-import android.annotation.TargetApi;
-import android.nfc.Tag;
 import android.util.Log;
 import android.view.MotionEvent;
 
 import com.mobileanwendungen.drawingapp.CustomMotionEvent;
-import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
 import com.mobileanwendungen.drawingapp.view.DrawingView;
 
 import java.io.ByteArrayInputStream;
@@ -77,13 +74,12 @@ public class RemoteHandler {
             }
         }
         //Log.d(TAG, "write: notify data");
-        byte[] b = BluetoothConstants.NOTIFY_DATA.getBytes();
-        bluetoothConnectionService.write(BluetoothConstants.NOTIFY_DATA.getBytes());
+        bluetoothConnectionService.write(BluetoothConstants.NOTIFY_EVENT.getBytes());
         //Log.d(TAG, "write: send data");
         bluetoothConnectionService.write(bytes);
     }
 
-    public void receivedData(String received) {
+    public void receivedRemoteEvent(String received) {
         CustomMotionEvent motionEvent = null;
         byte[] bytes = Base64.getDecoder().decode(received);
         ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
@@ -108,6 +104,19 @@ public class RemoteHandler {
             drawingView.onRemoteTouchEvent(motionEvent);
         else
             Log.d(TAG, "ERROR: read object == null");
+    }
+
+    public void sendMyLineWidth() {
+        bluetoothConnectionService = BluetoothController.getBluetoothController().getBluetoothConnectionService();
+        if (bluetoothConnectionService != null) {
+            bluetoothConnectionService.write(BluetoothConstants.NOTIFY_LINEWIDTH.getBytes());
+            bluetoothConnectionService.write(String.valueOf(drawingView.getLineWidth()).getBytes());
+        }
+    }
+
+    public void setRemoteLineWidth(String received) {
+        int width = Integer.parseInt(received);
+        drawingView.setRemoteLineWidth(width);
     }
 
 }

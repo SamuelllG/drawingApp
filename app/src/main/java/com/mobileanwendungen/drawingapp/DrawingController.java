@@ -18,6 +18,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
+import com.mobileanwendungen.drawingapp.bluetooth.RemoteHandler;
 import com.mobileanwendungen.drawingapp.utilities.WidthSeekBarChangeListener;
 import com.mobileanwendungen.drawingapp.view.DrawingView;
 
@@ -84,9 +85,11 @@ public class DrawingController {
         // get dialog from button
         View dialog = view.getRootView();
         SeekBar seekBar = dialog.findViewById(R.id.widthSeekBar);
-        drawingView.setLineWidth(seekBar.getProgress());
+        int width = seekBar.getProgress();
+        drawingView.setLineWidth(width);
         Log.d(TAG, "setLineWidth: set line width");
         currentAlertDialog.dismiss();
+        RemoteHandler.getRemoteHandler().sendMyLineWidth();
     }
 
     public void clearDrawingView() {

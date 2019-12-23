@@ -8,7 +8,7 @@ import android.util.Log;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConnectionService;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
 import com.mobileanwendungen.drawingapp.bluetooth.Threads.AcceptThread;
-import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
+import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants;
 
 import org.easymock.EasyMock;
 import org.junit.Before;

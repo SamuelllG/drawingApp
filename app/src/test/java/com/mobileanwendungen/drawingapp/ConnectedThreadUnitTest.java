@@ -12,7 +12,7 @@ import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
 import com.mobileanwendungen.drawingapp.bluetooth.MessageHandler;
 import com.mobileanwendungen.drawingapp.bluetooth.Threads.ConnectThread;
 import com.mobileanwendungen.drawingapp.bluetooth.Threads.ConnectedThread;
-import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
+import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants;
 
 import org.easymock.EasyMock;
 import org.junit.Before;
@@ -27,7 +27,6 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.UUID;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ConnectThread.class, Log.class, BluetoothController.class})

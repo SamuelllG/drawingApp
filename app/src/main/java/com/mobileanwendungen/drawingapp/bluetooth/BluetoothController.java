@@ -2,7 +2,6 @@ package com.mobileanwendungen.drawingapp.bluetooth;
 
 import android.Manifest;
 import android.annotation.TargetApi;
-import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
@@ -22,7 +21,6 @@ import com.mobileanwendungen.drawingapp.bluetooth.BroadcastReceivers.DiscoverBro
 import com.mobileanwendungen.drawingapp.bluetooth.BroadcastReceivers.ScanModeChangedBroadcastReceiver;
 import com.mobileanwendungen.drawingapp.bluetooth.BroadcastReceivers.StateChangedBroadcastReceiver;
 import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConnectionException;
-import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
 import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothDevices;
 
 import java.util.ArrayList;
@@ -238,6 +236,8 @@ public class BluetoothController {
             e.printStackTrace();
         }
         updateUI();
+
+        RemoteHandler.getRemoteHandler().sendMyLineWidth();
     }
 
 

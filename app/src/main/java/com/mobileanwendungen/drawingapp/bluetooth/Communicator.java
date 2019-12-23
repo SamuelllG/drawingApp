@@ -2,8 +2,6 @@ package com.mobileanwendungen.drawingapp.bluetooth;
 
 import android.util.Log;
 
-import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
-
 
 public class Communicator {
     private static final String TAG = "cust.Communicator";

@@ -2,14 +2,13 @@ package com.mobileanwendungen.drawingapp;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.util.Log;
 
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConnectionService;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
 import com.mobileanwendungen.drawingapp.bluetooth.Threads.ConnectThread;
-import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
+import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants;
 
 import org.easymock.EasyMock;
 import org.junit.Before;

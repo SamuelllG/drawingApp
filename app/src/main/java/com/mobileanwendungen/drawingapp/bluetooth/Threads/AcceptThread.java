@@ -6,7 +6,7 @@ import android.bluetooth.BluetoothSocket;
 import android.util.Log;
 
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConnectionService;
-import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
+import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
 
 import java.io.IOException;

@@ -4,8 +4,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
-import com.mobileanwendungen.drawingapp.bluetooth.Utils.BluetoothConstants;
-
 import java.util.Arrays;
 
 public class MessageHandler extends Handler {
@@ -15,6 +13,7 @@ public class MessageHandler extends Handler {
     private BluetoothConnectionService bluetoothConnectionService;
     private Communicator communicator;
     private boolean notifiedData;
+    private String dataType;
 
     public MessageHandler (BluetoothConnectionService bluetoothConnectionService) {
         this.bluetoothConnectionService = bluetoothConnectionService;
@@ -41,11 +40,26 @@ public class MessageHandler extends Handler {
         }
     }
 
+    private synchronized void readData(String received) {
+        switch (dataType) {
+            case BluetoothConstants.NOTIFY_LINEWIDTH:
+                RemoteHandler.getRemoteHandler().setRemoteLineWidth(received);
+                break;
+            case BluetoothConstants.NOTIFY_EVENT:
+                RemoteHandler.getRemoteHandler().receivedRemoteEvent(received);
+                break;
+            default:
+                Log.d(TAG, "ERROR: received unidentifiable data: " + received);
+        }
+
+
+    }
+
     private synchronized void readMessage(String received) {
         if (notifiedData) {
-            Log.d(TAG, "received data");
+            //Log.d(TAG, "received data");
+            readData(received);
             notifiedData = false;
-            RemoteHandler.getRemoteHandler().receivedData(received);
             return;
         }
         InputType type = checkInputType(received);
@@ -60,11 +74,12 @@ public class MessageHandler extends Handler {
                 communicator.processResponse(received);
                 break;
             case DATA:
-                Log.d(TAG, "data notified");
+                //Log.d(TAG, "data notified");
                 notifiedData = true;
+                dataType = received;
                 break;
             default:
-                Log.d(TAG, "ERROR: received unidentifiable data: " + received);
+                Log.d(TAG, "ERROR: received unidentifiable message: " + received);
         }
     }
 
@@ -77,7 +92,7 @@ public class MessageHandler extends Handler {
             return InputType.REQUEST;
         else if (Arrays.asList(BluetoothConstants.RESPONSES).contains(received))
             return InputType.RESPONSE;
-        else if (received.equals(BluetoothConstants.NOTIFY_DATA))
+        else if (Arrays.asList(BluetoothConstants.DATA).contains(received))
             return InputType.DATA;
         return InputType.NONE;
     }

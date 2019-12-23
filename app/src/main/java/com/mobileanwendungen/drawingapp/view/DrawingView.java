@@ -1,36 +1,23 @@
 package com.mobileanwendungen.drawingapp.view;
 
-import android.content.ContentValues;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
-import android.net.Uri;
-import android.os.Environment;
-import android.os.Parcel;
-import android.os.Parcelable;
-import android.provider.MediaStore;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
 import com.mobileanwendungen.drawingapp.CustomMotionEvent;
 import com.mobileanwendungen.drawingapp.bluetooth.RemoteHandler;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.RandomAccessFile;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.HashMap;
 
 public class DrawingView extends View {
@@ -43,7 +30,7 @@ public class DrawingView extends View {
     private Canvas bitmapCanvas;
     private Paint paintScreen;
     private Paint paintLine;
-    //private Paint remotePaintLine;
+    private Paint remotePaintLine;
     private HashMap<Integer, Path>[] pathMap;
     private HashMap<Integer, Point>[] previousPointMap;
 
@@ -52,7 +39,6 @@ public class DrawingView extends View {
     public DrawingView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         init();
-
     }
 
     //TODO: understand DrawingView and create DrawingController?
@@ -66,6 +52,12 @@ public class DrawingView extends View {
         paintLine.setStyle(Paint.Style.STROKE);
         paintLine.setStrokeWidth(7);
         paintLine.setStrokeCap(Paint.Cap.ROUND);
+
+        remotePaintLine = new Paint();
+        remotePaintLine.setAntiAlias(true);
+        remotePaintLine.setColor(Color.BLACK);
+        remotePaintLine.setStyle(Paint.Style.STROKE);
+        remotePaintLine.setStrokeCap(Paint.Cap.ROUND);
 
         pathMap = new HashMap[2];
         previousPointMap = new HashMap[2];
@@ -88,11 +80,14 @@ public class DrawingView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.drawBitmap(bitmap, 0, 0, paintScreen);
+        // this is temporary (for achieving the "live"-drawing effect
+        draw(canvas, 0, paintLine);
+        draw(canvas, 1, remotePaintLine);
+    }
 
-        for (int i = 0; i < pathMap.length; i++) {
-            for (Integer key : pathMap[i].keySet()) {
-                canvas.drawPath(pathMap[i].get(key), paintLine);
-            }
+    private void draw(Canvas canvas, int user, Paint paintLine) {
+        for (Integer key : pathMap[user].keySet()) {
+            canvas.drawPath(pathMap[user].get(key), paintLine);
         }
     }
 
@@ -106,7 +101,7 @@ public class DrawingView extends View {
             touchStarted(event.getX(actionIndex), event.getY(actionIndex), event.getPointerId(actionIndex), 0);
         }
         else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP){
-            touchEnded(event.getPointerId(actionIndex), 0);
+            touchEnded(event.getPointerId(actionIndex), 0, paintLine);
         }
         else {
             int pointerIndex = 0;
@@ -132,7 +127,7 @@ public class DrawingView extends View {
             touchStarted(event.getX(), event.getY(), event.getActionPointerId(), 1);
         }
         else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP){
-            touchEnded(event.getActionPointerId(), 1);
+            touchEnded(event.getActionPointerId(), 1, remotePaintLine);
         }
         else {
             touchMoved(event.getNewX(), event.getNewY(), event.getPointerId(), 1);
@@ -184,7 +179,10 @@ public class DrawingView extends View {
         }
     }
 
-    private void touchEnded(int pointerId, int user) {
+    /**
+     * Touch ended --> write everything to a persistent canvas
+     */
+    private void touchEnded(int pointerId, int user, Paint paintLine) {
         Path path = pathMap[user].get(pointerId); // get corresponding path
         bitmapCanvas.drawPath(path, paintLine); // draw to bitmapCanvas
         path.reset();
@@ -200,6 +198,10 @@ public class DrawingView extends View {
 
     public void setLineWidth(int width) {
         paintLine.setStrokeWidth(width);
+    }
+
+    public void setRemoteLineWidth(int width) {
+        remotePaintLine.setStrokeWidth(width);
     }
 
     public int getLineWidth() {

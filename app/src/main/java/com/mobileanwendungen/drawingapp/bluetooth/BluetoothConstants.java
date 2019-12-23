@@ -1,4 +1,4 @@
-package com.mobileanwendungen.drawingapp.bluetooth.Utils;
+package com.mobileanwendungen.drawingapp.bluetooth;
 
 public class BluetoothConstants {
 
@@ -29,8 +29,14 @@ public class BluetoothConstants {
     //public static final String REQUEST_CONNECT = "REQUEST_CONNECT";
     //public static final String CONFIRMED_CONNECT_REQUEST = "CONFIRMED_CONNECT_REQUEST";
 
+    // Data:
+    public static final String[] DATA = {
+            "NOTIFY_EVENT",
+            "NOTIFY_LINEWIDTH"
+    };
 
-    public static final String NOTIFY_DATA = "NOTIFY_DATA";
+    public static final String NOTIFY_EVENT = "NOTIFY_EVENT";
+    public static final String NOTIFY_LINEWIDTH = "NOTIFY_LINEWIDTH";
 
     // Requests:
     public static final String[] REQUESTS = {   "REQUEST_ESTABLISHED_CONNECTION",
