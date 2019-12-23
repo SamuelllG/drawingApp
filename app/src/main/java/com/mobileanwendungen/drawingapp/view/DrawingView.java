@@ -21,6 +21,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
+import com.mobileanwendungen.drawingapp.CustomMotionEvent;
 import com.mobileanwendungen.drawingapp.bluetooth.RemoteHandler;
 
 import java.io.File;
@@ -67,6 +68,10 @@ public class DrawingView extends View {
 
         pathMap = new HashMap[2];
         previousPointMap = new HashMap[2];
+        for (int i=0; i < 2; i++) {
+            pathMap[i] = new HashMap<>();
+            previousPointMap[i] = new HashMap<>();
+        }
 
         remoteHandler = RemoteHandler.getRemoteHandler();
         remoteHandler.init(this);
@@ -103,32 +108,85 @@ public class DrawingView extends View {
             touchEnded(event.getPointerId(actionIndex), 0);
         }
         else {
-            touchMoved(event, 0);
+            int pointerIndex = 0;
+            int pointerId = event.getPointerId(pointerIndex);
+            float newX = event.getX(pointerIndex);
+            float newY = event.getY(pointerIndex);
+            touchMoved(newX, newY, pointerId, 0);
         }
 
         invalidate(); // redraw screen
 
         // -------
-        remoteHandler.write(event);
+        remoteHandler.process(event);
 
         return true;
     }
 
-    public boolean onRemoteTouchEvent(MotionEvent event) {
-        int action = event.getActionMasked(); // event type
-        int actionIndex = event.getActionIndex(); // pointer ... finger, mouse,..
+    public boolean onRemoteTouchEvent(CustomMotionEvent event) {
+        int action = event.getAction();
+        int actionIndex = event.getActionIndex();
 
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_UP) {
-            touchStarted(event.getX(actionIndex), event.getY(actionIndex), event.getPointerId(actionIndex), 1);
+            touchStarted(event.getX(), event.getY(), event.getActionPointerId(), 1);
         }
         else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP){
-            touchEnded(event.getPointerId(actionIndex), 1);
+            touchEnded(event.getActionPointerId(), 1);
         }
         else {
-            touchMoved(event, 1);
+            touchMoved(event.getNewX(), event.getNewY(), event.getPointerId(), 1);
         }
         invalidate(); // redraw screen
         return true;
+    }
+
+    private void touchStarted(float x, float y, int pointerId, int user) {
+        Path path; // store the path for given touch
+        Point point; //store the last point in path
+
+        if (pathMap[user].containsKey(pointerId)) {
+            path = pathMap[user].get(pointerId);
+            point = previousPointMap[user].get(pointerId);
+        } else {
+            path = new Path();
+            pathMap[user].put(pointerId, path);
+            point = new Point();
+            previousPointMap[user].put(pointerId, point);
+        }
+
+        // move to coord of the touch
+        path.moveTo(x,y);
+        point.x = (int) x;
+        point.y = (int) y;
+
+    }
+
+    private void touchMoved(float newX, float newY, int pointerId, int user) {
+
+        Path path = pathMap[user].get(pointerId);
+        Point point = previousPointMap[user].get(pointerId);
+
+        // calculate how far user moved from the last update
+        float deltaX = Math.abs(newX - point.x);
+        float deltaY = Math.abs(newY - point.y);
+
+        if (deltaX >= TOUCH_TOLERANCE || deltaY >= TOUCH_TOLERANCE) {
+            //if distance is big enough to be considered
+
+            // move path to new location
+            path.quadTo(point.x, point.y, (newX + point.x) / 2, (newY + point.y) / 2);
+            //path.quadTo(point.x, point.y, newX, newY);
+
+            // store new coords
+            point.x = (int) newX;
+            point.y = (int) newY;
+        }
+    }
+
+    private void touchEnded(int pointerId, int user) {
+        Path path = pathMap[user].get(pointerId); // get corresponding path
+        bitmapCanvas.drawPath(path, paintLine); // draw to bitmapCanvas
+        path.reset();
     }
 
     public void setDrawingColor(int color) {
@@ -153,65 +211,6 @@ public class DrawingView extends View {
         previousPointMap[0].clear();
         bitmap.eraseColor(Color.WHITE);
         invalidate(); // refresh
-    }
-
-    private void touchStarted(float x, float y, int pointerId, int user) {
-        Path path; // store the path for given touch
-        Point point; //store the last point in path
-
-        if (pathMap[user].containsKey(pointerId)) {
-            path = pathMap[user].get(pointerId);
-            point = previousPointMap[user].get(pointerId);
-        } else {
-            path = new Path();
-            pathMap[user].put(pointerId, path);
-            point = new Point();
-            previousPointMap[user].put(pointerId, point);
-        }
-
-        // move to coord of the touch
-        path.moveTo(x,y);
-        point.x = (int) x;
-        point.y = (int) y;
-
-    }
-
-    private void touchMoved(MotionEvent event, int user) {
-        for (int i = 0; i < event.getPointerCount(); i++) {
-            // loop necessary?
-            int pointerId = event.getPointerId(i);
-            int pointerIndex = event.findPointerIndex(pointerId);
-
-            if (pathMap[user].containsKey(pointerId)) {
-                float newX = event.getX(pointerIndex);
-                float newY = event.getY(pointerIndex);
-
-                Path path = pathMap[user].get(pointerId);
-                Point point = previousPointMap[user].get(pointerId);
-
-                // calculate how far user moved from the last update
-                float deltaX = Math.abs(newX - point.x);
-                float deltaY = Math.abs(newY - point.y);
-
-                if (deltaX >= TOUCH_TOLERANCE || deltaY >= TOUCH_TOLERANCE) {
-                    //if distance is big enough to be considered
-
-                    // move path to new location
-                    path.quadTo(point.x, point.y, (newX + point.x) / 2, (newY + point.y) / 2);
-                    //path.quadTo(point.x, point.y, newX, newY);
-
-                    // store new coords
-                    point.x = (int) newX;
-                    point.y = (int) newY;
-                }
-            }
-        }
-    }
-
-    private void touchEnded(int pointerId, int user) {
-        Path path = pathMap[user].get(pointerId); // get corresponding path
-        bitmapCanvas.drawPath(path, paintLine); // draw to bitmapCanvas
-        path.reset();
     }
 
     public Bitmap getBitmap () {

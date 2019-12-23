@@ -44,6 +44,7 @@ public class MessageHandler extends Handler {
     private synchronized void readMessage(byte[] buffer, int numBytes) {
         if (notifiedData) {
             Log.d(TAG, "received data");
+            notifiedData = false;
             RemoteHandler.getRemoteHandler().receivedData(buffer, numBytes);
             return;
         }
@@ -61,6 +62,7 @@ public class MessageHandler extends Handler {
                 break;
             case DATA:
                 Log.d(TAG, "data notified");
+                notifiedData = true;
                 break;
             default:
                 Log.d(TAG, "ERROR: received unidentifiable data");
@@ -76,10 +78,8 @@ public class MessageHandler extends Handler {
             return InputType.REQUEST;
         else if (Arrays.asList(BluetoothConstants.RESPONSES).contains(received))
             return InputType.RESPONSE;
-        else if (received.equals(BluetoothConstants.NOTIFY_DATA)) {
-            notifiedData = true;
+        else if (received.equals(BluetoothConstants.NOTIFY_DATA))
             return InputType.DATA;
-        }
         return InputType.NONE;
     }
 }
