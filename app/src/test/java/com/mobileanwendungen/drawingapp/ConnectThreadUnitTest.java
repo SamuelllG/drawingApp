@@ -53,7 +53,7 @@ public class ConnectThreadUnitTest {
         EasyMock.expect(BluetoothController.getBluetoothController()).andReturn(bluetoothController);
         PowerMock.replay(BluetoothController.class);
 
-
+        Mockito.when(bluetoothController.getBluetoothConnectionService()).thenReturn(bluetoothConnectionService);
         createThread();
     }
 
@@ -163,7 +163,6 @@ public class ConnectThreadUnitTest {
     }
 
     private void createThread () throws IOException {
-        Mockito.when(bluetoothController.getBluetoothConnectionService()).thenReturn(bluetoothConnectionService);
         Mockito.when(bluetoothDevice.createInsecureRfcommSocketToServiceRecord(UUID.fromString(BluetoothConstants.UUID))).thenReturn(bluetoothSocket);
 
         connectThread = new ConnectThread(bluetoothDevice, bluetoothAdapter);

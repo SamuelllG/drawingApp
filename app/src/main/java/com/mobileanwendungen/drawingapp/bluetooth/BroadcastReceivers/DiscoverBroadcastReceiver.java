@@ -29,27 +29,25 @@ public class DiscoverBroadcastReceiver extends BluetoothBroadcastReceiver {
         if (action.equals(BluetoothDevice.ACTION_FOUND)) {
             Log.d(TAG, "onReceive: ACTION FOUND");
             BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-            //TODO: clean that up
+
             if (!bluetoothDevices.getDevices().contains(device)) {
                 Log.d(TAG, "onReceive: " + device.getName() + ": " + device.getAddress());
                 bluetoothDevices.addDevice(device);
                 bluetoothController.updateUI();
             }
             else {
+                // ACTION_NAME_CHANGED
                 Log.d(TAG, "onReceive: duplicate device " + device.getName() + ": " + device.getAddress());
+                // get existing device
                 int index = bluetoothDevices.getDevices().indexOf(device);
                 BluetoothDevice existing = bluetoothDevices.getDevice(index);
-                // TODO implement correctly
                 if (existing.getName() == null || existing.getName().equals("")) {
-                    //bluetoothActivity.newDevices.remove(index);
-                    bluetoothDevices.removeDevice(device);
+                    bluetoothDevices.removeDevice(existing);
                     bluetoothDevices.addDevice(device);
                     Log.d(TAG, "onReceive: updated device " + device.getName() + ": " + device.getAddress());
                     bluetoothController.updateUI();
                 }
             }
-
-
         }
     }
 }
