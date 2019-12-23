@@ -19,6 +19,7 @@ import com.mobileanwendungen.drawingapp.CustomMotionEvent;
 import com.mobileanwendungen.drawingapp.bluetooth.RemoteHandler;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class DrawingView extends View {
 
@@ -29,10 +30,10 @@ public class DrawingView extends View {
     private Bitmap bitmap;
     private Canvas bitmapCanvas;
     private Paint paintScreen;
-    private Paint paintLine;
-    private Paint remotePaintLine;
+    private Paint[] paintLine;
     private HashMap<Integer, Path>[] pathMap;
     private HashMap<Integer, Point>[] previousPointMap;
+    private int[] currentPathPointer;
 
     private RemoteHandler remoteHandler;
 
@@ -45,19 +46,16 @@ public class DrawingView extends View {
 
     private void init() {
         paintScreen = new Paint();
+        paintLine = new Paint[2];
 
-        paintLine = new Paint();
-        paintLine.setAntiAlias(true);
-        paintLine.setColor(Color.BLACK);
-        paintLine.setStyle(Paint.Style.STROKE);
-        paintLine.setStrokeWidth(7);
-        paintLine.setStrokeCap(Paint.Cap.ROUND);
-
-        remotePaintLine = new Paint();
-        remotePaintLine.setAntiAlias(true);
-        remotePaintLine.setColor(Color.BLACK);
-        remotePaintLine.setStyle(Paint.Style.STROKE);
-        remotePaintLine.setStrokeCap(Paint.Cap.ROUND);
+        for (int i = 0; i < paintLine.length; i++) {
+            paintLine[i] = new Paint();
+            paintLine[i].setAntiAlias(true);
+            paintLine[i].setColor(Color.BLACK);
+            paintLine[i].setStyle(Paint.Style.STROKE);
+            paintLine[i].setStrokeCap(Paint.Cap.ROUND);
+        }
+        paintLine[0].setStrokeWidth(7);
 
         pathMap = new HashMap[2];
         previousPointMap = new HashMap[2];
@@ -65,6 +63,7 @@ public class DrawingView extends View {
             pathMap[i] = new HashMap<>();
             previousPointMap[i] = new HashMap<>();
         }
+        currentPathPointer = new int[2];
 
         remoteHandler = RemoteHandler.getRemoteHandler();
         remoteHandler.init(this);
@@ -81,14 +80,14 @@ public class DrawingView extends View {
     protected void onDraw(Canvas canvas) {
         canvas.drawBitmap(bitmap, 0, 0, paintScreen);
         // this is temporary (for achieving the "live"-drawing effect
-        draw(canvas, 0, paintLine);
-        draw(canvas, 1, remotePaintLine);
+        drawCurrent(0);
+        drawCurrent(1);
     }
 
-    private void draw(Canvas canvas, int user, Paint paintLine) {
-        for (Integer key : pathMap[user].keySet()) {
-            canvas.drawPath(pathMap[user].get(key), paintLine);
-        }
+    private void drawCurrent(int user) {
+        Path path = pathMap[user].get(currentPathPointer[user]);
+        if (path != null)
+            bitmapCanvas.drawPath(path, paintLine[user]);
     }
 
     @Override
@@ -101,7 +100,7 @@ public class DrawingView extends View {
             touchStarted(event.getX(actionIndex), event.getY(actionIndex), event.getPointerId(actionIndex), 0);
         }
         else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP){
-            touchEnded(event.getPointerId(actionIndex), 0, paintLine);
+            touchEnded(event.getPointerId(actionIndex), 0);
         }
         else {
             int pointerIndex = 0;
@@ -127,7 +126,7 @@ public class DrawingView extends View {
             touchStarted(event.getX(), event.getY(), event.getActionPointerId(), 1);
         }
         else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP){
-            touchEnded(event.getActionPointerId(), 1, remotePaintLine);
+            touchEnded(event.getActionPointerId(), 1);
         }
         else {
             touchMoved(event.getNewX(), event.getNewY(), event.getPointerId(), 1);
@@ -155,6 +154,7 @@ public class DrawingView extends View {
         point.x = (int) x;
         point.y = (int) y;
 
+        currentPathPointer[user] = pointerId;
     }
 
     private void touchMoved(float newX, float newY, int pointerId, int user) {
@@ -182,46 +182,53 @@ public class DrawingView extends View {
     /**
      * Touch ended --> write everything to a persistent canvas
      */
-    private void touchEnded(int pointerId, int user, Paint paintLine) {
+    private void touchEnded(int pointerId, int user) {
         Path path = pathMap[user].get(pointerId); // get corresponding path
-        bitmapCanvas.drawPath(path, paintLine); // draw to bitmapCanvas
-        path.reset();
+        bitmapCanvas.drawPath(path, paintLine[user]); // draw to bitmapCanvas
+        //path.reset();
     }
 
-    public void setDrawingColor(int color) {
-        paintLine.setColor(color);
+    public void setDrawingColor(int user, int color) {
+        paintLine[user].setColor(color);
     }
 
-    public int getDrawingColor() {
-        return paintLine.getColor();
+    public int getDrawingColor(int user) {
+        return paintLine[user].getColor();
     }
 
-    public void setLineWidth(int width) {
-        paintLine.setStrokeWidth(width);
+    public void setLineWidth(int user, int width) {
+        paintLine[user].setStrokeWidth(width);
     }
 
-    public void setRemoteLineWidth(int width) {
-        remotePaintLine.setStrokeWidth(width);
+    public int getLineWidth(int user) {
+        return (int) paintLine[user].getStrokeWidth();
     }
 
-    public int getLineWidth() {
-        return (int) paintLine.getStrokeWidth();
-    }
-
-    public void clear() {
-        // clear just own points although screen is erased (?)
-        pathMap[0].clear();
-        previousPointMap[0].clear();
+    public void clear(int user, int keep) {
+        pathMap[user].clear();
+        previousPointMap[user].clear();
         bitmap.eraseColor(Color.WHITE);
+        drawAll(keep);
         invalidate(); // refresh
+    }
+
+    private void drawAll(int user) {
+        for (int pointer : pathMap[user].keySet()) {
+            Path path = pathMap[user].get(pointer);
+            bitmapCanvas.drawPath(path, paintLine[user]);
+        }
     }
 
     public Bitmap getBitmap () {
         return bitmap;
     }
 
+    public Paint getPaintLine(int user) {
+        return paintLine[user];
+    }
+
     public void setBitmap (Bitmap bitmap) {
-        clear();
+        clear(0, 1);
         this.bitmap = Bitmap.createBitmap(bitmap.copy(Bitmap.Config.ARGB_8888, true));
         bitmapCanvas = new Canvas(this.bitmap);
         Log.d(TAG, "setBitmap: set bitmap successfully");

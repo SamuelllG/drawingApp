@@ -331,7 +331,7 @@ public class BluetoothController {
         }
     }
 
-    // TODO: clear list if bluetooth disabled, remove devices from list that are not found anymore
+    // TODO: notifyClear list if bluetooth disabled, remove devices from list that are not found anymore
     @TargetApi(Build.VERSION_CODES.M)
     private void checkPermissions() {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {

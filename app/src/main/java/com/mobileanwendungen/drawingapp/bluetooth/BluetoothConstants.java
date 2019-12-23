@@ -32,11 +32,13 @@ public class BluetoothConstants {
     // Data:
     public static final String[] DATA = {
             "NOTIFY_EVENT",
-            "NOTIFY_LINEWIDTH"
+            "NOTIFY_LINEWIDTH",
+            "NOTIFY_CLEAR"
     };
 
     public static final String NOTIFY_EVENT = "NOTIFY_EVENT";
     public static final String NOTIFY_LINEWIDTH = "NOTIFY_LINEWIDTH";
+    public static final String NOTIFY_CLEAR = "NOTIFY_CLEAR";
 
     // Requests:
     public static final String[] REQUESTS = {   "REQUEST_ESTABLISHED_CONNECTION",

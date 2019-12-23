@@ -27,7 +27,7 @@ public class WidthSeekBarChangeListener implements SeekBar.OnSeekBarChangeListen
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         Log.d(TAG, "onProgressChanged: set line width to " + progress);
         Paint p = new Paint();
-        p.setColor(drawingView.getDrawingColor());
+        p.setColor(drawingView.getDrawingColor(0));
         p.setStrokeCap(Paint.Cap.ROUND);
         p.setStrokeWidth(progress);
 

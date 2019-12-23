@@ -48,6 +48,8 @@ public class MessageHandler extends Handler {
             case BluetoothConstants.NOTIFY_EVENT:
                 RemoteHandler.getRemoteHandler().receivedRemoteEvent(received);
                 break;
+            case BluetoothConstants.NOTIFY_CLEAR:
+                RemoteHandler.getRemoteHandler().clearRemote();
             default:
                 Log.d(TAG, "ERROR: received unidentifiable data: " + received);
         }

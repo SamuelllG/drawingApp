@@ -108,15 +108,28 @@ public class RemoteHandler {
 
     public void sendMyLineWidth() {
         bluetoothConnectionService = BluetoothController.getBluetoothController().getBluetoothConnectionService();
-        if (bluetoothConnectionService != null) {
+        if (bluetoothConnectionService != null && bluetoothConnectionService.getConnectionState() == BluetoothConstants.STATE_VERIFIED_CONNECTION) {
             bluetoothConnectionService.write(BluetoothConstants.NOTIFY_LINEWIDTH.getBytes());
-            bluetoothConnectionService.write(String.valueOf(drawingView.getLineWidth()).getBytes());
+            bluetoothConnectionService.write(String.valueOf(drawingView.getLineWidth(0)).getBytes());
         }
     }
 
     public void setRemoteLineWidth(String received) {
         int width = Integer.parseInt(received);
-        drawingView.setRemoteLineWidth(width);
+        drawingView.setLineWidth(1, width);
     }
 
+    public void notifyClear() {
+        bluetoothConnectionService = BluetoothController.getBluetoothController().getBluetoothConnectionService();
+        if (bluetoothConnectionService != null) {
+            bluetoothConnectionService.write(BluetoothConstants.NOTIFY_CLEAR.getBytes());
+            bluetoothConnectionService.write(String.valueOf(1).getBytes());
+        }
+    }
+
+    public void clearRemote() {
+        drawingView.clear(1, 0);
+    }
+
+    // TODO: make notifyClear just notifyClear own stuff, transform screen coordinates
 }

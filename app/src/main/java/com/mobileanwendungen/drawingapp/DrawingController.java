@@ -1,33 +1,25 @@
 package com.mobileanwendungen.drawingapp;
 
 import android.app.Activity;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.Uri;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 
-import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
 import com.mobileanwendungen.drawingapp.bluetooth.RemoteHandler;
 import com.mobileanwendungen.drawingapp.utilities.WidthSeekBarChangeListener;
 import com.mobileanwendungen.drawingapp.view.DrawingView;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 
 public class DrawingController {
     private static final String TAG = "cust.DrawingController";
@@ -71,8 +63,8 @@ public class DrawingController {
         //Button setLineWidthButton = view.findViewById(R.id.widthDialogButton);
         widthSeekBar.setOnSeekBarChangeListener(widthSeekBarChangeListener);
         // setup visuals before first use
-        widthSeekBar.setProgress(drawingView.getLineWidth());
-        widthSeekBarChangeListener.onProgressChanged(widthSeekBar, drawingView.getLineWidth(), false);
+        widthSeekBar.setProgress(drawingView.getLineWidth(0));
+        widthSeekBarChangeListener.onProgressChanged(widthSeekBar, drawingView.getLineWidth(0), false);
 
         Log.d(TAG, "showLineWidthDialog: show dialog");
         currentDialogBuilder.setView(view);
@@ -86,14 +78,15 @@ public class DrawingController {
         View dialog = view.getRootView();
         SeekBar seekBar = dialog.findViewById(R.id.widthSeekBar);
         int width = seekBar.getProgress();
-        drawingView.setLineWidth(width);
+        drawingView.setLineWidth(0, width);
         Log.d(TAG, "setLineWidth: set line width");
         currentAlertDialog.dismiss();
         RemoteHandler.getRemoteHandler().sendMyLineWidth();
     }
 
     public void clearDrawingView() {
-        drawingView.clear();
+        drawingView.clear(0, 1);
+        RemoteHandler.getRemoteHandler().notifyClear();
     }
 
     /**
