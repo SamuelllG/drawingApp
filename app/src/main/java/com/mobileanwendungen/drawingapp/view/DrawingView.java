@@ -17,7 +17,9 @@ import androidx.annotation.Nullable;
 
 import com.mobileanwendungen.drawingapp.CustomMotionEvent;
 import com.mobileanwendungen.drawingapp.bluetooth.RemoteHandler;
+import com.mobileanwendungen.drawingapp.utilities.SerializablePath;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,7 +33,7 @@ public class DrawingView extends View {
     private Canvas bitmapCanvas;
     private Paint paintScreen;
     private Paint[] paintLine;
-    private HashMap<Integer, Path>[] pathMap;
+    private HashMap<Integer, SerializablePath>[] pathMap;
     private HashMap<Integer, Point>[] previousPointMap;
     private int[] currentPathPointer;
 
@@ -80,8 +82,10 @@ public class DrawingView extends View {
     protected void onDraw(Canvas canvas) {
         canvas.drawBitmap(bitmap, 0, 0, paintScreen);
         // this is temporary (for achieving the "live"-drawing effect
-        drawCurrent(0);
-        drawCurrent(1);
+        //drawCurrent(0);
+        //drawCurrent(1);
+        drawAll(0);
+        drawAll(1);
     }
 
     private void drawCurrent(int user) {
@@ -120,7 +124,7 @@ public class DrawingView extends View {
 
     public boolean onRemoteTouchEvent(CustomMotionEvent event) {
         int action = event.getAction();
-        int actionIndex = event.getActionIndex();
+        //int actionIndex = event.getActionIndex();
 
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_UP) {
             touchStarted(event.getX(), event.getY(), event.getActionPointerId(), 1);
@@ -136,14 +140,14 @@ public class DrawingView extends View {
     }
 
     private void touchStarted(float x, float y, int pointerId, int user) {
-        Path path; // store the path for given touch
+        SerializablePath path; // store the path for given touch
         Point point; //store the last point in path
 
         if (pathMap[user].containsKey(pointerId)) {
             path = pathMap[user].get(pointerId);
             point = previousPointMap[user].get(pointerId);
         } else {
-            path = new Path();
+            path = new SerializablePath();
             pathMap[user].put(pointerId, path);
             point = new Point();
             previousPointMap[user].put(pointerId, point);
@@ -214,9 +218,17 @@ public class DrawingView extends View {
 
     private void drawAll(int user) {
         for (int pointer : pathMap[user].keySet()) {
-            Path path = pathMap[user].get(pointer);
+            SerializablePath path = pathMap[user].get(pointer);
             bitmapCanvas.drawPath(path, paintLine[user]);
         }
+    }
+
+    public void setPathMap(HashMap<Integer, SerializablePath> map, int user) {
+        pathMap[user] = map;
+        //pathMap[user].get(0).recreate();
+        previousPointMap[0].put(0, new Point());
+        //drawAll(user);
+        invalidate();
     }
 
     public Bitmap getBitmap () {
@@ -225,6 +237,10 @@ public class DrawingView extends View {
 
     public Paint getPaintLine(int user) {
         return paintLine[user];
+    }
+
+    public HashMap<Integer, SerializablePath> getPathMap(int user) {
+        return pathMap[user];
     }
 
     public void setBitmap (Bitmap bitmap) {

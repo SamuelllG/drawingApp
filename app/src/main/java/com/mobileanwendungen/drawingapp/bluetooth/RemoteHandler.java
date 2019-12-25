@@ -131,5 +131,7 @@ public class RemoteHandler {
         drawingView.clear(1, 0);
     }
 
-    // TODO: make notifyClear just notifyClear own stuff, transform screen coordinates
+    // TODO: implement load command for remote (first check if it's not already working)
+    // TODO: clean that shit up and look what is real drawing
+
 }

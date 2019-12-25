@@ -12,7 +12,12 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import com.mobileanwendungen.drawingapp.bluetooth.RemoteHandler;
+import com.mobileanwendungen.drawingapp.utilities.MapWrapper;
+import com.mobileanwendungen.drawingapp.utilities.SerializablePath;
 import com.mobileanwendungen.drawingapp.utilities.WidthSeekBarChangeListener;
 import com.mobileanwendungen.drawingapp.view.DrawingView;
 
@@ -20,6 +25,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
 
 public class DrawingController {
     private static final String TAG = "cust.DrawingController";
@@ -99,11 +109,32 @@ public class DrawingController {
         // Create imageDir
         File path = new File(directory, fileName);
 
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        //Gson gson = new Gson();
+        MapWrapper wrapper = new MapWrapper();
+        wrapper.setMap(drawingView.getPathMap(0));
+        //wrapper.addToMap(drawingView.getPathMap(1));
+        String serialized = null;// = gson.toJson(wrapper);
+
+
+
+
+
         FileOutputStream fos = null;
         try {
             fos = new FileOutputStream(path);
+            try {
+                objectMapper.writeValue(fos, wrapper);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             // Use the compress method on the BitMap object to write image to the OutputStream
-            drawingView.getBitmap().compress(Bitmap.CompressFormat.PNG, 100, fos);
+            //drawingView.getBitmap().compress(Bitmap.CompressFormat.PNG, 100, fos);
+            ///////fos.write(serialized.getBytes());
+            ///////fos.flush();
+            //Log.d(TAG, serialized);
             Toast.makeText(activity, R.string.saved, Toast.LENGTH_LONG).show();
 /*
             String storagePath = directory.getAbsolutePath();
@@ -129,11 +160,25 @@ public class DrawingController {
     public void loadFromStorage() {
         try {
             Log.d(TAG, "loadFromStorage: load from " + storagePath);
-            File f = new File(storagePath, fileName);
+            //File stored = new File(storagePath, fileName);
+            String path = storagePath + "/" + fileName;
 
-            Bitmap b = BitmapFactory.decodeStream(new FileInputStream(f));
-            drawingView.setBitmap(b);
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            //Gson gson = new Gson();
+            String json = new String(Files.readAllBytes(Paths.get(path)), StandardCharsets.UTF_8);
+            //MapWrapper wrapper = gson.fromJson(json, MapWrapper.class);
+            MapWrapper wrapper = objectMapper.readValue(json, MapWrapper.class);
+            HashMap<Integer, SerializablePath> pathMap = wrapper.getMap();
+            for (int key : pathMap.keySet()) {
+                SerializablePath serializablePath = wrapper.getMap().get(key);
+                serializablePath.recreate();
+            }
+            drawingView.setPathMap(pathMap, 0);
 
+            //Bitmap b = BitmapFactory.decodeStream(new FileInputStream(f));
+            //drawingView.setBitmap(b);
+            Log.d(TAG, json);
             Toast.makeText(activity, R.string.loaded, Toast.LENGTH_LONG).show();
 
         } catch (Exception e) {
