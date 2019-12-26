@@ -87,7 +87,6 @@ public class BluetoothConnectionService extends Thread {
         }
     }
 
-
     private synchronized void onStateChanged(int oldState) {
         switch (mState) {
             case STATE_NONE:

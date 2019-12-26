@@ -36,12 +36,10 @@ public class ConnectedThreadUnitTest {
     private BluetoothController bluetoothController;
     private BluetoothSocket bluetoothSocket;
     private BluetoothDevice bluetoothDevice;
-    private BluetoothAdapter bluetoothAdapter;
     private BluetoothConnectionService bluetoothConnectionService;
     private Handler handler;
     private InputStream inputStream;
     private OutputStream outputStream;
-    private Message message;
 
     @Before
     public void setup() throws IOException {
@@ -50,12 +48,10 @@ public class ConnectedThreadUnitTest {
         bluetoothController = PowerMockito.mock(BluetoothController.class);
         bluetoothSocket = PowerMockito.mock(BluetoothSocket.class);
         bluetoothDevice = PowerMockito.mock(BluetoothDevice.class);
-        bluetoothAdapter = PowerMockito.mock(BluetoothAdapter.class);
         bluetoothConnectionService = PowerMockito.mock(BluetoothConnectionService.class);
         handler = Mockito.mock(MessageHandler.class);
         inputStream = Mockito.mock(InputStream.class);
         outputStream = Mockito.mock(OutputStream.class);
-        message = Mockito.mock(Message.class);
 
 
         // mock singleton with PowerMock
