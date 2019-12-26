@@ -5,19 +5,21 @@ import android.graphics.Path;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.io.Serializable;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+//@JsonDeserialize(using = SerializablePathDeserializer.class)
 public class SerializablePath extends Path implements Serializable {
     private static final long serialVersionUID = 422910382351392014L;
 
     @JsonProperty("actions")
-    private List<Action> actions = new LinkedList<>();
+    private List<Action> actions = new ArrayList<>();
 
-    @JsonProperty
+    @JsonProperty("paint")
     private PathPaint paint;
 
     public SerializablePath() {}
@@ -31,6 +33,10 @@ public class SerializablePath extends Path implements Serializable {
         for (Action action : actions) {
             action.perform(this);
         }
+    }
+
+    public void addAction(Action action) {
+        actions.add(action);
     }
 
     public void setPaint(PathPaint paint) {

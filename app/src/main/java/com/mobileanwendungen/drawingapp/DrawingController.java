@@ -10,7 +10,10 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConnectionService;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants;
@@ -177,6 +180,9 @@ public class DrawingController {
             String json = new String(data, "UTF-8");
             //----
             //PathsData wrapper = gson.fromJson(json, PathsData.class);
+            //JsonFactory jsonFactory = new JsonFactory();
+            //JsonParser jp = jsonFactory.createParser(json);
+            //PathsData pathsData = objectMapper.readValue((JsonParser)objectMapper.readTree(jp), PathsData.class);
             PathsData pathsData = objectMapper.readValue(json, PathsData.class);
             List<SerializablePath> paths = pathsData.getPaths();
             for (SerializablePath path : paths) {
