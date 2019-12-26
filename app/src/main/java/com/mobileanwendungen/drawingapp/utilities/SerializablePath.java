@@ -1,15 +1,11 @@
 package com.mobileanwendungen.drawingapp.utilities;
 
+import android.graphics.Paint;
 import android.graphics.Path;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonValue;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
@@ -21,18 +17,28 @@ public class SerializablePath extends Path implements Serializable {
     @JsonProperty("actions")
     private List<Action> actions = new LinkedList<>();
 
-    public void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
+    @JsonProperty
+    private PathPaint paint;
 
-        for (Action action : actions) {
-            action.perform(this);
-        }
+    public SerializablePath() {}
+
+    public SerializablePath(PathPaint paint) {
+        this.paint = paint;
     }
+
 
     public void recreate() {
         for (Action action : actions) {
             action.perform(this);
         }
+    }
+
+    public void setPaint(PathPaint paint) {
+        this.paint = paint;
+    }
+
+    public PathPaint getPaint() {
+        return paint;
     }
 
     @Override

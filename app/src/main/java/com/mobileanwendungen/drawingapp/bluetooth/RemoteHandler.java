@@ -5,7 +5,7 @@ import android.view.MotionEvent;
 
 import com.mobileanwendungen.drawingapp.CustomMotionEvent;
 import com.mobileanwendungen.drawingapp.DrawingController;
-import com.mobileanwendungen.drawingapp.utilities.MapWrapper;
+import com.mobileanwendungen.drawingapp.utilities.PathsData;
 import com.mobileanwendungen.drawingapp.view.DrawingView;
 
 import java.io.ByteArrayInputStream;
@@ -15,7 +15,6 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
-import java.util.Base64;
 
 public class RemoteHandler {
     private static final String TAG = "cust.RemoteHandler";
@@ -81,13 +80,13 @@ public class RemoteHandler {
         bluetoothConnectionService.write(bytes);
     }
 
-    public void sendMyMap(MapWrapper mapWrapper) {
+    public void sendMyMap(PathsData pathsData) {
         byte[] bytes = null;
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutput out;
         try {
             out = new ObjectOutputStream(bos);
-            out.writeObject(mapWrapper);
+            out.writeObject(pathsData);
             out.flush();
             bytes = bos.toByteArray();
             //bytes = Base64.getEncoder().encodeToString(bytes).getBytes();
@@ -134,14 +133,14 @@ public class RemoteHandler {
             Log.d(TAG, "ERROR: read object == null");
     }
 
-    public void loadRemoteMap(byte[] bytes) {
-        MapWrapper mapWrapper = null;
+    public void readRemotePaths(byte[] bytes) {
+        PathsData pathsData = null;
         //byte[] bytes = Base64.getDecoder().decode(received);
         ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
         ObjectInput in = null;
         try {
             in = new ObjectInputStream(bis);
-            mapWrapper = (MapWrapper) in.readObject();
+            pathsData = (PathsData) in.readObject();
             //Log.d(TAG, "read object successfully");
         } catch (ClassNotFoundException | IOException e) {
             //Log.e(TAG, e.getMessage());
@@ -156,8 +155,8 @@ public class RemoteHandler {
                 // ignore close exception
             }
         }
-        if (mapWrapper != null)
-            DrawingController.getDrawingController().loadRemoteMap(mapWrapper.getMap());
+        if (pathsData != null)
+            DrawingController.getDrawingController().loadRemotePaths(pathsData.getPaths());
         else
             Log.d(TAG, "ERROR: read object == null");
     }

@@ -16,7 +16,7 @@ import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConnectionService;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
 import com.mobileanwendungen.drawingapp.bluetooth.RemoteHandler;
-import com.mobileanwendungen.drawingapp.utilities.MapWrapper;
+import com.mobileanwendungen.drawingapp.utilities.PathsData;
 import com.mobileanwendungen.drawingapp.utilities.SerializablePath;
 import com.mobileanwendungen.drawingapp.utilities.WidthSeekBarChangeListener;
 import com.mobileanwendungen.drawingapp.view.DrawingView;
@@ -25,11 +25,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.Scanner;
+import java.util.List;
 
 public class DrawingController {
     private static final String TAG = "cust.DrawingController";
@@ -89,7 +86,7 @@ public class DrawingController {
         SeekBar seekBar = dialog.findViewById(R.id.widthSeekBar);
         int width = seekBar.getProgress();
         drawingView.setLineWidth(0, width);
-        Log.d(TAG, "setLineWidth: set line width");
+        Log.d(TAG, "setPaint: set line width");
         currentAlertDialog.dismiss();
 
         BluetoothConnectionService bluetoothConnectionService = BluetoothController.getBluetoothController().getBluetoothConnectionService();
@@ -118,9 +115,9 @@ public class DrawingController {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         //Gson gson = new Gson();
-        MapWrapper wrapper = new MapWrapper();
-        wrapper.setMap(drawingView.getPathMap(0));
-        //wrapper.addToMap(drawingView.getPathMap(1));
+        PathsData pathsData = new PathsData();
+        pathsData.setPaths(drawingView.getPaths(0));
+        //wrapper.addToPaths(drawingView.getPathMap(1));
         String serialized = null;// = gson.toJson(wrapper);
 
 
@@ -131,7 +128,7 @@ public class DrawingController {
         try {
             fos = new FileOutputStream(path);
             try {
-                objectMapper.writeValue(fos, wrapper);
+                objectMapper.writeValue(fos, pathsData);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -166,7 +163,7 @@ public class DrawingController {
         try {
             Log.d(TAG, "loadFromStorage: load from " + storagePath);
             File stored = new File(storagePath, fileName);
-            String path = storagePath + "/" + fileName;
+            String filePath = storagePath + "/" + fileName;
 
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -179,18 +176,18 @@ public class DrawingController {
 
             String json = new String(data, "UTF-8");
             //----
-            //MapWrapper wrapper = gson.fromJson(json, MapWrapper.class);
-            MapWrapper wrapper = objectMapper.readValue(json, MapWrapper.class);
-            HashMap<Integer, SerializablePath> pathMap = wrapper.getMap();
-            for (int key : pathMap.keySet()) {
-                SerializablePath serializablePath = wrapper.getMap().get(key);
-                serializablePath.recreate();
+            //PathsData wrapper = gson.fromJson(json, PathsData.class);
+            PathsData pathsData = objectMapper.readValue(json, PathsData.class);
+            List<SerializablePath> paths = pathsData.getPaths();
+            for (SerializablePath path : paths) {
+                path.recreate();
+                path.getPaint().recreate();
             }
             drawingView.clear(0, 1);
-            drawingView.setPathMap(pathMap, 0);
+            drawingView.setPathMap(paths, 0);
             BluetoothConnectionService bluetoothConnectionService = BluetoothController.getBluetoothController().getBluetoothConnectionService();
             if (bluetoothConnectionService != null && bluetoothConnectionService.getConnectionState() == BluetoothConstants.STATE_VERIFIED_CONNECTION)
-                RemoteHandler.getRemoteHandler().sendMyMap(wrapper);
+                RemoteHandler.getRemoteHandler().sendMyMap(pathsData);
 
             //Bitmap b = BitmapFactory.decodeStream(new FileInputStream(f));
             //drawingView.setBitmap(b);
@@ -203,13 +200,13 @@ public class DrawingController {
         }
     }
 
-    public void loadRemoteMap(HashMap<Integer, SerializablePath> map) {
+    public void loadRemotePaths(List<SerializablePath> paths) {
         drawingView.clear(1, 0);
-        for (int key : map.keySet()) {
-            SerializablePath serializablePath = map.get(key);
-            serializablePath.recreate();
+        for (SerializablePath path : paths) {
+            path.recreate();
+            path.getPaint().recreate();
         }
-        drawingView.setPathMap(map, 1);
+        drawingView.setPathMap(paths, 1);
     }
 
 }

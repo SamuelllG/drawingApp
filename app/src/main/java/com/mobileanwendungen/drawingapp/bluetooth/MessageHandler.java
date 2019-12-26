@@ -5,7 +5,6 @@ import android.os.Message;
 import android.util.Log;
 
 import java.util.Arrays;
-import java.util.List;
 
 public class MessageHandler extends Handler {
     private static final String TAG = "cust.MessageHandler";
@@ -54,7 +53,7 @@ public class MessageHandler extends Handler {
                 RemoteHandler.getRemoteHandler().clearRemote();
                 break;
             case BluetoothConstants.NOTIFY_MAPDATA:
-                RemoteHandler.getRemoteHandler().loadRemoteMap(bytes);
+                RemoteHandler.getRemoteHandler().readRemotePaths(bytes);
                 break;
             default:
                 Log.d(TAG, "ERROR: received unidentifiable data: " + received);
