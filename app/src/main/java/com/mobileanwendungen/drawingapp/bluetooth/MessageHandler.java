@@ -4,6 +4,8 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
+import com.mobileanwendungen.drawingapp.constants.BluetoothConstants;
+
 import java.util.Arrays;
 
 public class MessageHandler extends Handler {

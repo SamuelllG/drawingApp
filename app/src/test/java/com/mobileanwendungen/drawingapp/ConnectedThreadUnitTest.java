@@ -8,11 +8,11 @@ import android.os.Message;
 import android.util.Log;
 
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConnectionService;
-import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
+import com.mobileanwendungen.drawingapp.controllers.BluetoothController;
 import com.mobileanwendungen.drawingapp.bluetooth.MessageHandler;
-import com.mobileanwendungen.drawingapp.bluetooth.Threads.ConnectThread;
-import com.mobileanwendungen.drawingapp.bluetooth.Threads.ConnectedThread;
-import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants;
+import com.mobileanwendungen.drawingapp.threads.ConnectThread;
+import com.mobileanwendungen.drawingapp.threads.ConnectedThread;
+import com.mobileanwendungen.drawingapp.constants.BluetoothConstants;
 
 import org.easymock.EasyMock;
 import org.junit.Before;

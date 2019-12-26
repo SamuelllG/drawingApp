@@ -2,6 +2,8 @@ package com.mobileanwendungen.drawingapp.bluetooth;
 
 import android.util.Log;
 
+import com.mobileanwendungen.drawingapp.constants.BluetoothConstants;
+
 
 public class Communicator {
     private static final String TAG = "cust.Communicator";
@@ -64,8 +66,7 @@ public class Communicator {
                 Log.d(TAG, "checkForRequest: roll: " + BluetoothConnectionService.roll);
                 bytes = ByteBuffer.allocate(4).putInt(BluetoothConnectionService.roll).array();
                 sendEvent(bytes);
-                return true;
-                //TODO reset roll after successful connection*/
+                return true;*/
             default:
                 Log.d(TAG, "ERROR: you forgot to add the request to the handler ;)");
         }

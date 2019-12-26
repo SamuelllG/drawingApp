@@ -3,10 +3,12 @@ package com.mobileanwendungen.drawingapp.bluetooth;
 import android.util.Log;
 import android.view.MotionEvent;
 
-import com.mobileanwendungen.drawingapp.CustomMotionEvent;
-import com.mobileanwendungen.drawingapp.DrawingController;
-import com.mobileanwendungen.drawingapp.utilities.PathsData;
-import com.mobileanwendungen.drawingapp.view.DrawingView;
+import com.mobileanwendungen.drawingapp.wrapper.CustomMotionEvent;
+import com.mobileanwendungen.drawingapp.constants.BluetoothConstants;
+import com.mobileanwendungen.drawingapp.controllers.BluetoothController;
+import com.mobileanwendungen.drawingapp.controllers.DrawingController;
+import com.mobileanwendungen.drawingapp.wrapper.PathsData;
+import com.mobileanwendungen.drawingapp.views.DrawingView;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

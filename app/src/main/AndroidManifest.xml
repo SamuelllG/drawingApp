@@ -20,8 +20,8 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:hardwareAccelerated="false">
-        <activity android:label="@string/connectTitle" android:name=".BluetoothActivity"></activity>
-        <activity android:name=".MainActivity"
+        <activity android:label="@string/connectTitle" android:name=".views.BluetoothActivity"></activity>
+        <activity android:name=".views.MainActivity"
             android:hardwareAccelerated="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

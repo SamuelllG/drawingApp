@@ -8,33 +8,35 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.mobileanwendungen.drawingapp.R;
-import com.mobileanwendungen.drawingapp.UIHelper;
-import com.mobileanwendungen.drawingapp.bluetooth.Threads.AcceptThread;
-import com.mobileanwendungen.drawingapp.bluetooth.Threads.ConnectThread;
-import com.mobileanwendungen.drawingapp.bluetooth.Threads.ConnectedThread;
-import com.mobileanwendungen.drawingapp.bluetooth.Threads.TimeoutThread;
+import com.mobileanwendungen.drawingapp.utils.UIHelper;
+import com.mobileanwendungen.drawingapp.threads.AcceptThread;
+import com.mobileanwendungen.drawingapp.threads.ConnectThread;
+import com.mobileanwendungen.drawingapp.threads.ConnectedThread;
+import com.mobileanwendungen.drawingapp.threads.TimeoutThread;
+import com.mobileanwendungen.drawingapp.constants.BluetoothConstants;
+import com.mobileanwendungen.drawingapp.controllers.BluetoothController;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_FORCE_CLOSE;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_RESTARTING;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_SHUT_DOWN;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CLOSED;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CLOSE_REQUEST;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CLOSING;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CONNECTING_VIA_SERVER;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_FAILED;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_INTERRUPTED;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_LISTEN;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_NONE;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CONNECTING;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_CONNECTED;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_INIT_RESTART;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_TIMEOUT;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_UNABLE_TO_CONNECT;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_VERIFICATION;
-import static com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants.STATE_VERIFIED_CONNECTION;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_FORCE_CLOSE;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_RESTARTING;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_SHUT_DOWN;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_CLOSED;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_CLOSE_REQUEST;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_CLOSING;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_CONNECTING_VIA_SERVER;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_FAILED;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_INTERRUPTED;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_LISTEN;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_NONE;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_CONNECTING;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_CONNECTED;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_INIT_RESTART;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_TIMEOUT;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_UNABLE_TO_CONNECT;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_VERIFICATION;
+import static com.mobileanwendungen.drawingapp.constants.BluetoothConstants.STATE_VERIFIED_CONNECTION;
 
 public class BluetoothConnectionService extends Thread {
     private static final String TAG = "cust.BTConnectService";
