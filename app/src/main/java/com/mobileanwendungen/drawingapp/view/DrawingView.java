@@ -1,11 +1,9 @@
 package com.mobileanwendungen.drawingapp.view;
 
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
@@ -16,26 +14,17 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
+import com.mobileanwendungen.drawingapp.Constants;
 import com.mobileanwendungen.drawingapp.CustomMotionEvent;
-import com.mobileanwendungen.drawingapp.DrawingController;
-import com.mobileanwendungen.drawingapp.MainActivity;
 import com.mobileanwendungen.drawingapp.bluetooth.RemoteHandler;
-import com.mobileanwendungen.drawingapp.bluetooth.Threads.RefresherThread;
 import com.mobileanwendungen.drawingapp.utilities.PathPaint;
 import com.mobileanwendungen.drawingapp.utilities.SerializablePath;
 
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class DrawingView extends View {
-
     private static final String TAG = "cust.DrawingView";
-
-    public static final float TOUCH_TOLERANCE = 10;
 
     private Bitmap bitmap;
     private Canvas bitmapCanvas;
@@ -101,67 +90,52 @@ public class DrawingView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        int action = event.getActionMasked();
+        int actionIndex = event.getActionIndex();
+        float x = event.getX(actionIndex);
+        float y = event.getY(actionIndex);
+        float newX = event.getX(0);
+        float newY = event.getY(0);
 
-        int action = event.getActionMasked(); // event type
-        int actionIndex = event.getActionIndex(); // pointer ... finger, mouse,..
-
-        if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_UP) {
-            touchStarted(event.getX(actionIndex), event.getY(actionIndex),0);
-        } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP){
-            touchEnded(0);
-        } else if (action == MotionEvent.ACTION_MOVE){
-            float newX = event.getX(0);
-            float newY = event.getY(0);
-            touchMoved(newX, newY, 0);
-        } else {
-            return true;
-        }
-
-        invalidate(); // redraw screen
-
-        // -------
-        remoteHandler.process(event);
-
-        return true;
+        remoteHandler.prepareAndSend(event);
+        return onTouch(action, x, y, newX, newY, 0);
     }
 
-    public boolean onRemoteTouchEvent(CustomMotionEvent event) {
-        int action = event.getAction();
+    public void onRemoteTouchEvent(CustomMotionEvent event) {
+        onTouch(event.getAction(), event.getX(), event.getY(), event.getNewX(), event.getNewY(), 1);
+    }
 
+    private boolean onTouch(int action, float x, float y, float newX, float newY, int user) {
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_UP) {
-            touchStarted(event.getX(), event.getY(),1);
+            touchStarted(x, y,user);
         } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP){
-            isDrawing[1] = false;
+            touchEnded(user);
+        } else if (action == MotionEvent.ACTION_MOVE){
+            touchMoved(newX, newY, user);
         } else {
-            touchMoved(event.getNewX(), event.getNewY(), 1);
+            return false;
         }
-        invalidate(); // redraw screen
+        invalidate();
         return true;
     }
 
     private void touchStarted(float x, float y, int user) {
         SerializablePath path = new SerializablePath( new PathPaint(paintLine[user]) );
-        Point point;
-
         paths[user].add(path);
         path.moveTo(x,y);
-
-        point = new Point((int)x, (int)y);
+        Point point = new Point((int)x, (int)y);
         previousPoint[user] = point;
-
         isDrawing[user] = true;
     }
 
     private void touchMoved(float newX, float newY, int user) {
         SerializablePath path = paths[user].get(paths[user].size()-1);
         Point lastPoint = previousPoint[user];
-
         float deltaX = Math.abs(newX - lastPoint.x);
         float deltaY = Math.abs(newY - lastPoint.y);
 
-        if (deltaX >= TOUCH_TOLERANCE || deltaY >= TOUCH_TOLERANCE) {
+        if (deltaX >= Constants.TOUCH_TOLERANCE || deltaY >= Constants.TOUCH_TOLERANCE) {
             path.quadTo(lastPoint.x, lastPoint.y, (newX + lastPoint.x) / 2, (newY + lastPoint.y) / 2);
-
             lastPoint.x = (int) newX;
             lastPoint.y = (int) newY;
         }
@@ -172,22 +146,6 @@ public class DrawingView extends View {
         // draw whole path again, then refresh view again --> bug fix quick drawing
         drawCurrent(user);
         invalidate();
-    }
-
-    public void setDrawingColor(int user, int color) {
-        paintLine[user].setColor(color);
-    }
-
-    public int getDrawingColor(int user) {
-        return paintLine[user].getColor();
-    }
-
-    public void setLineWidth(int user, int width) {
-        paintLine[user].setStrokeWidth(width);
-    }
-
-    public int getLineWidth(int user) {
-        return (int) paintLine[user].getStrokeWidth();
     }
 
     public void clear(int user, int keep) {
@@ -210,6 +168,22 @@ public class DrawingView extends View {
         drawAll(user);
     }
 
+    public void setDrawingColor(int user, int color) {
+        paintLine[user].setColor(color);
+    }
+
+    public int getDrawingColor(int user) {
+        return paintLine[user].getColor();
+    }
+
+    public void setLineWidth(int user, int width) {
+        paintLine[user].setStrokeWidth(width);
+    }
+
+    public int getLineWidth(int user) {
+        return (int) paintLine[user].getStrokeWidth();
+    }
+
     public List<SerializablePath> getPaths(int user) {
         return paths[user];
     }
@@ -221,7 +195,6 @@ public class DrawingView extends View {
     public PathPaint getPaintLine(int user) {
         return paintLine[user];
     }
-
 
     public void setBitmap (Bitmap bitmap) {
         clear(0, 1);

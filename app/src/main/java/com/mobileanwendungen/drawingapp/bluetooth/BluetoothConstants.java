@@ -2,7 +2,6 @@ package com.mobileanwendungen.drawingapp.bluetooth;
 
 public class BluetoothConstants {
 
-    //TODO: put from strings.xml here
     public static final String APP_NAME = "DrawingApp";
     public static final String UUID = "fb34bc1f-6f69-496d-a9e5-dea2af62f538";
 

@@ -31,9 +31,6 @@ public class MessageHandler extends Handler {
                 break;
             case BluetoothConstants.MESSAGE_TOAST:
                 // not implemented
-                //String toast = inputMessage.getData().getString("toast");
-                //Log.d(TAG, "handleMessage: error + " + toast);
-                //Toast.makeText()
                 break;
             default:
                 Log.d(TAG, "inputMessage type not found");
@@ -58,13 +55,10 @@ public class MessageHandler extends Handler {
             default:
                 Log.d(TAG, "ERROR: received unidentifiable data: " + received);
         }
-
-
     }
 
     private synchronized void readMessage(byte[] bytes) {
         if (notifiedData) {
-            //Log.d(TAG, "received data");
             readData(bytes);
             notifiedData = false;
             return;
@@ -82,17 +76,12 @@ public class MessageHandler extends Handler {
                 communicator.processResponse(received);
                 break;
             case DATA:
-                //Log.d(TAG, "data notified");
                 notifiedData = true;
                 dataType = received;
                 break;
             default:
                 Log.d(TAG, "ERROR: received unidentifiable message: " + received);
         }
-    }
-
-    private synchronized String getReceivedString (byte[] buffer, int numBytes) {
-        return new String(Arrays.copyOfRange(buffer, 0, numBytes));
     }
 
     private synchronized InputType checkInputType (String received) {
