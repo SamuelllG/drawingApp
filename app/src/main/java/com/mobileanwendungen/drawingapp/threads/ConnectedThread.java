@@ -66,13 +66,7 @@ public class ConnectedThread extends Thread {
                     buffer = resizeArray(buffer);
                 }
 
-                // check for separators
-                if (iCount < 6) {
-                    iCount++;
-                    continue;
-                }
-                byte[] check = Arrays.copyOfRange(buffer, iCount-5, iCount+1);
-                if (Arrays.equals(check, BluetoothConstants.SEPARATOR)) {
+                if (isSeparator(buffer, iCount)) {
                     byte[] message = Arrays.copyOfRange(buffer, 0, iCount-5);
                     buffer = new byte[16384];
                     iCount = 0;
@@ -97,24 +91,47 @@ public class ConnectedThread extends Thread {
         bluetoothController.getBluetoothConnectionService().onThreadClosed(BluetoothConstants.CONNECTED_THREAD);
     }
 
+    private boolean isSeparator(byte[] buffer, int iCount) {
+        if (iCount < 6)
+            return false;
+        byte[] check = Arrays.copyOfRange(buffer, iCount-5, iCount+1);
+        return Arrays.equals(check, BluetoothConstants.SEPARATOR);
+    }
+
+    public boolean testIsSeparator(byte[] buffer, int iCount) {
+        return isSeparator(buffer, iCount);
+    }
+
     private byte[] resizeArray(byte[] old) {
         byte[] newArray = new byte[old.length*2];
         System.arraycopy(old, 0, newArray, 0, old.length);
         return newArray;
     }
 
+    public byte[] testResizeArray(byte[] old) {
+        return resizeArray(old);
+    }
+
     public void write(byte[] buffer) {
         // append separator at end of data to prevent that two writes are read as one read
-        byte[] bytes = new byte[buffer.length + 6];
-        System.arraycopy(buffer, 0, bytes, 0, buffer.length);
-        System.arraycopy(BluetoothConstants.SEPARATOR, 0, bytes, bytes.length-6, 6);
-
+        byte[] bytes = appendSeparator(buffer);
         try {
             mmOutStream.write(bytes);
         } catch (IOException e) {
             Log.d(TAG, "sendEvent: exception during sendEvent");
             e.printStackTrace();
         }
+    }
+
+    private byte[] appendSeparator(byte[] buffer) {
+        byte[] bytes = new byte[buffer.length + 6];
+        System.arraycopy(buffer, 0, bytes, 0, buffer.length);
+        System.arraycopy(BluetoothConstants.SEPARATOR, 0, bytes, bytes.length-6, 6);
+        return bytes;
+    }
+
+    public byte[] testAppendSeparator(byte[] buffer) {
+        return appendSeparator(buffer);
     }
 
     public void cancel() {

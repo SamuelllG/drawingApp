@@ -15,6 +15,7 @@ import com.mobileanwendungen.drawingapp.threads.ConnectedThread;
 import com.mobileanwendungen.drawingapp.constants.BluetoothConstants;
 
 import org.easymock.EasyMock;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -65,12 +66,6 @@ public class ConnectedThreadUnitTest {
 
         Mockito.when(bluetoothController.getBluetoothConnectionService()).thenReturn(bluetoothConnectionService);
         createThread();
-
-
-        // Mockito.verify(bluetoothSocket, Mockito.never()).connect();
-        // Mockito.verify(bluetoothConnectionService, Mockito.times(3)).getConnectionState();
-        // Mockito.verify(bluetoothConnectionService, Mockito.never()).setConnectionSocket(bluetoothSocket);
-        // Mockito.doThrow(IOException.class).when(bluetoothSocket).connect();
     }
 
     @Test
@@ -86,40 +81,99 @@ public class ConnectedThreadUnitTest {
 
     @Test
     public void testVerification() throws IOException, InterruptedException {
-        Mockito.when(bluetoothConnectionService.getConnectionState()).thenReturn(BluetoothConstants.STATE_CONNECTED);
+        Mockito.when(bluetoothConnectionService.getConnectionState()).thenReturn(BluetoothConstants.STATE_CONNECTED).thenReturn(BluetoothConstants.STATE_CONNECTED).thenReturn(BluetoothConstants.STATE_NONE);
+        Mockito.when(inputStream.read(new byte[4096], 0, 1)).thenReturn(1);
         connectedThread.start();
         waitForThread();
 
         // mockito.times --> pay attention to OR in if
-        Mockito.verify(bluetoothConnectionService, Mockito.times(2)).getConnectionState();
-        byte[] buffer = new byte[1024];
+        Mockito.verify(bluetoothConnectionService, Mockito.times(5)).getConnectionState();
         Mockito.verify(bluetoothConnectionService).setState(BluetoothConstants.STATE_VERIFICATION);
-        Mockito.verify(inputStream).read(buffer);
-    }
-
-    @Test
-    public void testVerified() throws IOException, InterruptedException {
-        Mockito.when(bluetoothConnectionService.getConnectionState()).thenReturn(BluetoothConstants.STATE_VERIFIED_CONNECTION); // or VERIFICATION
-        connectedThread.start();
-        waitForThread();
-
-        Mockito.verify(inputStream, Mockito.never()).read();
-        Mockito.verify(bluetoothConnectionService, Mockito.never()).setState(BluetoothConstants.STATE_VERIFICATION);
     }
 
     @Test
     public void testRead() throws IOException, InterruptedException {
-        Mockito.when(bluetoothConnectionService.getConnectionState()).thenReturn(BluetoothConstants.STATE_CONNECTED);
-
-        byte[] buffer = new byte[1024];
-        int numBytes = 42;
-        Mockito.when(inputStream.read(buffer)).thenReturn(numBytes);
-        Mockito.when(handler.obtainMessage(BluetoothConstants.MESSAGE_READ, numBytes, -1, buffer)).thenReturn(message);
+        Mockito.when(bluetoothConnectionService.getConnectionState()).thenReturn(BluetoothConstants.STATE_CONNECTED).thenReturn(BluetoothConstants.STATE_CONNECTED).thenReturn(BluetoothConstants.STATE_NONE);
+        Mockito.when(inputStream.read(new byte[4096], 0, 1)).thenReturn(1);
         connectedThread.start();
         waitForThread();
 
-        Mockito.verify(inputStream).read(buffer);
-        Mockito.verify(bluetoothConnectionService).setState(BluetoothConstants.STATE_VERIFICATION);
+        Mockito.verify(bluetoothConnectionService, Mockito.times(5)).getConnectionState();
+        Mockito.verify(inputStream).read(new byte[4096], 0, 1);
+    }
+
+    @Test
+    public void testIsSeparator() {
+        byte[] bytes = new byte[] { (byte) 120, (byte) 42, (byte) 120, (byte) 42, (byte) 120, (byte) 42 };
+        Assert.assertFalse(connectedThread.testIsSeparator(bytes, 5));
+        Assert.assertFalse(connectedThread.testIsSeparator(BluetoothConstants.SEPARATOR, 5));
+        bytes = new byte[] { (byte) 122, (byte) 120, (byte) 42, (byte) 120, (byte) 42, (byte) 120, (byte) 42 };
+        Assert.assertFalse(connectedThread.testIsSeparator(bytes, 6));
+        bytes = new byte[] { (byte) 122, 0, 0, 0, 0, 0, 0 };
+        System.arraycopy(BluetoothConstants.SEPARATOR, 0, bytes, 1, BluetoothConstants.SEPARATOR.length);
+        Assert.assertTrue(connectedThread.testIsSeparator(bytes, 6));
+        bytes = new byte[] { (byte) 122, (byte) 2, (byte) -43, (byte) 55, (byte) 94, 0, 0, 0, 0, 0, 0 };
+        System.arraycopy(BluetoothConstants.SEPARATOR, 0, bytes, 5, BluetoothConstants.SEPARATOR.length);
+        Assert.assertTrue(connectedThread.testIsSeparator(bytes, 10));
+    }
+
+    @Test
+    public void testInterrupted() throws IOException, InterruptedException {
+        Mockito.when(bluetoothConnectionService.getConnectionState()).thenReturn(BluetoothConstants.STATE_VERIFIED_CONNECTION);
+        Mockito.doThrow(IOException.class).when(inputStream).read(new byte[4096], 0, 1);
+        connectedThread.start();
+        waitForThread();
+
+        Mockito.verify(bluetoothConnectionService, Mockito.times(6)).getConnectionState();
+        Mockito.verify(inputStream).read(new byte[4096], 0, 1);
+        Mockito.verify(bluetoothConnectionService).onThreadClosed(BluetoothConstants.CONNECTED_THREAD);
+        Mockito.verify(bluetoothConnectionService).setState(BluetoothConstants.STATE_INTERRUPTED);
+    }
+
+    @Test
+    public void testLateClose() throws IOException, InterruptedException {
+        Mockito.when(bluetoothConnectionService.getConnectionState()).thenReturn(BluetoothConstants.STATE_VERIFIED_CONNECTION)
+                .thenReturn(BluetoothConstants.STATE_VERIFIED_CONNECTION)
+                .thenReturn(BluetoothConstants.STATE_VERIFIED_CONNECTION)
+                .thenReturn(BluetoothConstants.STATE_VERIFIED_CONNECTION)
+                .thenReturn(BluetoothConstants.STATE_CLOSING);
+        Mockito.doThrow(IOException.class).when(inputStream).read(new byte[4096], 0, 1);
+        connectedThread.start();
+        waitForThread();
+
+        Mockito.verify(bluetoothConnectionService, Mockito.times(8)).getConnectionState();
+        Mockito.verify(inputStream).read(new byte[4096], 0, 1);
+        Mockito.verify(bluetoothConnectionService, Mockito.never()).setState(BluetoothConstants.STATE_INTERRUPTED);
+    }
+
+    @Test
+    public void testResizeArray() {
+        byte[] array = new byte[4096];
+        Assert.assertEquals(array.length*2, connectedThread.testResizeArray(array).length);
+    }
+
+    @Test
+    public void testGetRemoteDevice() {
+        Mockito.when(bluetoothSocket.getRemoteDevice()).thenReturn(bluetoothDevice);
+        Assert.assertEquals(bluetoothDevice, connectedThread.getRemoteDevice());
+    }
+
+    @Test
+    public void testAppendSeparator() {
+        byte[] buffer = new byte[] { (byte) 122, (byte) 2, (byte) -43, (byte) 55, (byte) 94, (byte) 122, (byte) 2, (byte) -43, (byte) 55, (byte) 94 };
+        byte[] bytes = new byte[] { (byte) 122, (byte) 2, (byte) -43, (byte) 55, (byte) 94, (byte) 122, (byte) 2, (byte) -43, (byte) 55, (byte) 94, 0, 0, 0, 0, 0, 0 };
+        System.arraycopy(BluetoothConstants.SEPARATOR, 0, bytes, 10, 6);
+        byte[] testBytes = connectedThread.testAppendSeparator(buffer);
+        Assert.assertArrayEquals(bytes, testBytes);
+    }
+
+    @Test
+    public void testWrite() throws IOException {
+        byte[] buffer = new byte[] { (byte) 122, (byte) 2, (byte) -43, (byte) 55, (byte) 94, (byte) 122, (byte) 2, (byte) -43, (byte) 55, (byte) 94 };
+        byte[] bytes = new byte[] { (byte) 122, (byte) 2, (byte) -43, (byte) 55, (byte) 94, (byte) 122, (byte) 2, (byte) -43, (byte) 55, (byte) 94, 0, 0, 0, 0, 0, 0 };
+        System.arraycopy(BluetoothConstants.SEPARATOR, 0, bytes, 10, 6);
+        connectedThread.write(buffer);
+        Mockito.verify(outputStream).write(bytes);
     }
 
 
