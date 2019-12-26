@@ -48,13 +48,13 @@ public class Communicator {
                 Log.d(TAG, "checkForRequest: connect request received");
                 BluetoothConnectionService.connectRequestReceived = true;
                 Log.d(TAG, "checkForRequest: confirm connect request");
-                write(BluetoothConstants.CONFIRMED_CONNECT_REQUEST.getBytes());
+                sendEvent(BluetoothConstants.CONFIRMED_CONNECT_REQUEST.getBytes());
                 // roll yourself
                 Random random = new Random();
                 BluetoothConnectionService.roll = random.nextInt();
                 Log.d(TAG, "checkForRequest: roll: " + BluetoothConnectionService.roll);
                 byte[] bytes = ByteBuffer.allocate(4).putInt(BluetoothConnectionService.roll).array();
-                write(bytes);
+                sendEvent(bytes);
                 return true;
             case BluetoothConstants.CONFIRMED_CONNECT_REQUEST:
                 Log.d(TAG, "checkForRequest: connect request was confirmed");
@@ -63,7 +63,7 @@ public class Communicator {
                 BluetoothConnectionService.roll = random.nextInt();
                 Log.d(TAG, "checkForRequest: roll: " + BluetoothConnectionService.roll);
                 bytes = ByteBuffer.allocate(4).putInt(BluetoothConnectionService.roll).array();
-                write(bytes);
+                sendEvent(bytes);
                 return true;
                 //TODO reset roll after successful connection*/
             default:

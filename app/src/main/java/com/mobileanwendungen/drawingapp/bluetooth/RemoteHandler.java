@@ -4,6 +4,8 @@ import android.util.Log;
 import android.view.MotionEvent;
 
 import com.mobileanwendungen.drawingapp.CustomMotionEvent;
+import com.mobileanwendungen.drawingapp.DrawingController;
+import com.mobileanwendungen.drawingapp.utilities.MapWrapper;
 import com.mobileanwendungen.drawingapp.view.DrawingView;
 
 import java.io.ByteArrayInputStream;
@@ -51,10 +53,10 @@ public class RemoteHandler {
 
         bluetoothConnectionService = BluetoothController.getBluetoothController().getBluetoothConnectionService();
         if (bluetoothConnectionService != null && bluetoothConnectionService.getConnectionState() == BluetoothConstants.STATE_VERIFIED_CONNECTION)
-            write(customMotionEvent);
+            sendEvent(customMotionEvent);
     }
 
-    public void write (CustomMotionEvent motionEvent) {
+    public void sendEvent(CustomMotionEvent motionEvent) {
         byte[] bytes = null;
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutput out;
@@ -63,7 +65,7 @@ public class RemoteHandler {
             out.writeObject(motionEvent);
             out.flush();
             bytes = bos.toByteArray();
-            bytes = Base64.getEncoder().encodeToString(bytes).getBytes();
+            //bytes = Base64.getEncoder().encodeToString(bytes).getBytes();
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -73,15 +75,40 @@ public class RemoteHandler {
                 // ignore close exception
             }
         }
-        //Log.d(TAG, "write: notify data");
+        //Log.d(TAG, "sendEvent: notify data");
         bluetoothConnectionService.write(BluetoothConstants.NOTIFY_EVENT.getBytes());
-        //Log.d(TAG, "write: send data");
+        //Log.d(TAG, "sendEvent: sendEvent data");
         bluetoothConnectionService.write(bytes);
     }
 
-    public void receivedRemoteEvent(String received) {
+    public void sendMyMap(MapWrapper mapWrapper) {
+        byte[] bytes = null;
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutput out;
+        try {
+            out = new ObjectOutputStream(bos);
+            out.writeObject(mapWrapper);
+            out.flush();
+            bytes = bos.toByteArray();
+            //bytes = Base64.getEncoder().encodeToString(bytes).getBytes();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                bos.close();
+            } catch (IOException ex) {
+                // ignore close exception
+            }
+        }
+        //Log.d(TAG, "sendEvent: notify data");
+        bluetoothConnectionService.write(BluetoothConstants.NOTIFY_MAPDATA.getBytes());
+        //Log.d(TAG, "sendEvent: sendEvent data");
+        bluetoothConnectionService.write(bytes);
+    }
+
+    public void receivedRemoteEvent(byte[] bytes) {
         CustomMotionEvent motionEvent = null;
-        byte[] bytes = Base64.getDecoder().decode(received);
+        //byte[] bytes = Base64.getDecoder().decode(received);
         ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
         ObjectInput in = null;
         try {
@@ -89,7 +116,8 @@ public class RemoteHandler {
             motionEvent = (CustomMotionEvent) in.readObject();
             //Log.d(TAG, "read object successfully");
         } catch (ClassNotFoundException | IOException e) {
-            Log.e(TAG, e.getMessage());
+            //Log.e(TAG, e.getMessage());
+            Log.d(TAG, "ERROR");
             e.printStackTrace();
         } finally {
             try {
@@ -106,9 +134,38 @@ public class RemoteHandler {
             Log.d(TAG, "ERROR: read object == null");
     }
 
+    public void loadRemoteMap(byte[] bytes) {
+        MapWrapper mapWrapper = null;
+        //byte[] bytes = Base64.getDecoder().decode(received);
+        ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+        ObjectInput in = null;
+        try {
+            in = new ObjectInputStream(bis);
+            mapWrapper = (MapWrapper) in.readObject();
+            //Log.d(TAG, "read object successfully");
+        } catch (ClassNotFoundException | IOException e) {
+            //Log.e(TAG, e.getMessage());
+            Log.d(TAG, "ERROR");
+            e.printStackTrace();
+        } finally {
+            try {
+                if (in != null) {
+                    in.close();
+                }
+            } catch (IOException ex) {
+                // ignore close exception
+            }
+        }
+        if (mapWrapper != null)
+            DrawingController.getDrawingController().loadRemoteMap(mapWrapper.getMap());
+        else
+            Log.d(TAG, "ERROR: read object == null");
+    }
+
     public void sendMyLineWidth() {
         bluetoothConnectionService = BluetoothController.getBluetoothController().getBluetoothConnectionService();
-        if (bluetoothConnectionService != null && bluetoothConnectionService.getConnectionState() == BluetoothConstants.STATE_VERIFIED_CONNECTION) {
+        if (bluetoothConnectionService != null) {
+            // be safe
             bluetoothConnectionService.write(BluetoothConstants.NOTIFY_LINEWIDTH.getBytes());
             bluetoothConnectionService.write(String.valueOf(drawingView.getLineWidth(0)).getBytes());
         }
@@ -120,18 +177,17 @@ public class RemoteHandler {
     }
 
     public void notifyClear() {
-        bluetoothConnectionService = BluetoothController.getBluetoothController().getBluetoothConnectionService();
-        if (bluetoothConnectionService != null) {
-            bluetoothConnectionService.write(BluetoothConstants.NOTIFY_CLEAR.getBytes());
-            bluetoothConnectionService.write(String.valueOf(1).getBytes());
-        }
+        bluetoothConnectionService.write(BluetoothConstants.NOTIFY_CLEAR.getBytes());
+        bluetoothConnectionService.write(String.valueOf(1).getBytes());
     }
 
     public void clearRemote() {
         drawingView.clear(1, 0);
     }
 
-    // TODO: implement load command for remote (first check if it's not already working)
     // TODO: clean that shit up and look what is real drawing
+
+    // TODO: BUG AFTER PAIRING on remote device --> doesnt get shown as paired
+    // TODO: line width
 
 }

@@ -5,6 +5,7 @@ import android.os.Message;
 import android.util.Log;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class MessageHandler extends Handler {
     private static final String TAG = "cust.MessageHandler";
@@ -24,7 +25,7 @@ public class MessageHandler extends Handler {
     public void handleMessage(Message inputMessage) {
         switch (inputMessage.what) {
             case BluetoothConstants.MESSAGE_READ:
-                readMessage((String) inputMessage.obj);
+                readMessage((byte[]) inputMessage.obj);
                 break;
             case BluetoothConstants.MESSAGE_WRITE:
                 // not implemented
@@ -40,16 +41,21 @@ public class MessageHandler extends Handler {
         }
     }
 
-    private synchronized void readData(String received) {
+    private synchronized void readData(byte[] bytes) {
+        String received = new String(bytes);
         switch (dataType) {
             case BluetoothConstants.NOTIFY_LINEWIDTH:
                 RemoteHandler.getRemoteHandler().setRemoteLineWidth(received);
                 break;
             case BluetoothConstants.NOTIFY_EVENT:
-                RemoteHandler.getRemoteHandler().receivedRemoteEvent(received);
+                RemoteHandler.getRemoteHandler().receivedRemoteEvent(bytes);
                 break;
             case BluetoothConstants.NOTIFY_CLEAR:
                 RemoteHandler.getRemoteHandler().clearRemote();
+                break;
+            case BluetoothConstants.NOTIFY_MAPDATA:
+                RemoteHandler.getRemoteHandler().loadRemoteMap(bytes);
+                break;
             default:
                 Log.d(TAG, "ERROR: received unidentifiable data: " + received);
         }
@@ -57,13 +63,14 @@ public class MessageHandler extends Handler {
 
     }
 
-    private synchronized void readMessage(String received) {
+    private synchronized void readMessage(byte[] bytes) {
         if (notifiedData) {
             //Log.d(TAG, "received data");
-            readData(received);
+            readData(bytes);
             notifiedData = false;
             return;
         }
+        String received = new String(bytes);
         InputType type = checkInputType(received);
         switch (type) {
             case REQUEST:

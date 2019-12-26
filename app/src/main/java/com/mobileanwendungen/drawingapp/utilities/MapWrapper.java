@@ -8,6 +8,8 @@ import java.util.HashMap;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MapWrapper implements Serializable {
+    private static final long serialVersionUID = 789713232142315215L;
+
     private HashMap<Integer, SerializablePath> map;
 
     public HashMap<Integer, SerializablePath> getMap() {

@@ -3,8 +3,6 @@ package com.mobileanwendungen.drawingapp;
 import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.view.View;
 import android.widget.SeekBar;
@@ -14,7 +12,9 @@ import androidx.appcompat.app.AlertDialog;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
+import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConnectionService;
+import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants;
+import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
 import com.mobileanwendungen.drawingapp.bluetooth.RemoteHandler;
 import com.mobileanwendungen.drawingapp.utilities.MapWrapper;
 import com.mobileanwendungen.drawingapp.utilities.SerializablePath;
@@ -27,9 +27,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Scanner;
 
 public class DrawingController {
     private static final String TAG = "cust.DrawingController";
@@ -91,12 +91,17 @@ public class DrawingController {
         drawingView.setLineWidth(0, width);
         Log.d(TAG, "setLineWidth: set line width");
         currentAlertDialog.dismiss();
-        RemoteHandler.getRemoteHandler().sendMyLineWidth();
+
+        BluetoothConnectionService bluetoothConnectionService = BluetoothController.getBluetoothController().getBluetoothConnectionService();
+        if (bluetoothConnectionService != null && bluetoothConnectionService.getConnectionState() == BluetoothConstants.STATE_VERIFIED_CONNECTION)
+            RemoteHandler.getRemoteHandler().sendMyLineWidth();
     }
 
     public void clearDrawingView() {
         drawingView.clear(0, 1);
-        RemoteHandler.getRemoteHandler().notifyClear();
+        BluetoothConnectionService bluetoothConnectionService = BluetoothController.getBluetoothController().getBluetoothConnectionService();
+        if (bluetoothConnectionService != null && bluetoothConnectionService.getConnectionState() == BluetoothConstants.STATE_VERIFIED_CONNECTION)
+            RemoteHandler.getRemoteHandler().notifyClear();
     }
 
     /**
@@ -130,9 +135,9 @@ public class DrawingController {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            // Use the compress method on the BitMap object to write image to the OutputStream
+            // Use the compress method on the BitMap object to sendEvent image to the OutputStream
             //drawingView.getBitmap().compress(Bitmap.CompressFormat.PNG, 100, fos);
-            ///////fos.write(serialized.getBytes());
+            ///////fos.sendEvent(serialized.getBytes());
             ///////fos.flush();
             //Log.d(TAG, serialized);
             Toast.makeText(activity, R.string.saved, Toast.LENGTH_LONG).show();
@@ -160,13 +165,20 @@ public class DrawingController {
     public void loadFromStorage() {
         try {
             Log.d(TAG, "loadFromStorage: load from " + storagePath);
-            //File stored = new File(storagePath, fileName);
+            File stored = new File(storagePath, fileName);
             String path = storagePath + "/" + fileName;
 
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             //Gson gson = new Gson();
-            String json = new String(Files.readAllBytes(Paths.get(path)), StandardCharsets.UTF_8);
+            // TARGETAPI 26 String json = new String(Files.readAllBytes(Paths.get(path)), StandardCharsets.UTF_8);
+            FileInputStream fis = new FileInputStream(stored);
+            byte[] data = new byte[(int) stored.length()];
+            fis.read(data);
+            fis.close();
+
+            String json = new String(data, "UTF-8");
+            //----
             //MapWrapper wrapper = gson.fromJson(json, MapWrapper.class);
             MapWrapper wrapper = objectMapper.readValue(json, MapWrapper.class);
             HashMap<Integer, SerializablePath> pathMap = wrapper.getMap();
@@ -174,7 +186,11 @@ public class DrawingController {
                 SerializablePath serializablePath = wrapper.getMap().get(key);
                 serializablePath.recreate();
             }
+            drawingView.clear(0, 1);
             drawingView.setPathMap(pathMap, 0);
+            BluetoothConnectionService bluetoothConnectionService = BluetoothController.getBluetoothController().getBluetoothConnectionService();
+            if (bluetoothConnectionService != null && bluetoothConnectionService.getConnectionState() == BluetoothConstants.STATE_VERIFIED_CONNECTION)
+                RemoteHandler.getRemoteHandler().sendMyMap(wrapper);
 
             //Bitmap b = BitmapFactory.decodeStream(new FileInputStream(f));
             //drawingView.setBitmap(b);
@@ -185,6 +201,15 @@ public class DrawingController {
             Toast.makeText(activity, R.string.error_loading, Toast.LENGTH_LONG).show();
             e.printStackTrace();
         }
+    }
+
+    public void loadRemoteMap(HashMap<Integer, SerializablePath> map) {
+        drawingView.clear(1, 0);
+        for (int key : map.keySet()) {
+            SerializablePath serializablePath = map.get(key);
+            serializablePath.recreate();
+        }
+        drawingView.setPathMap(map, 1);
     }
 
 }

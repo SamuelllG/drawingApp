@@ -19,6 +19,8 @@ public class BluetoothConstants {
 
     public static final long TIMEOUT = 2000; // in ms
 
+    public static final byte[] SEPARATOR = { (byte) 127, (byte) 5, (byte) 54, (byte) 42, (byte) 87, (byte) 22 };
+
 
 
     //public static final String BLUETOOTH_STATE_CHANGED = "drawingapp.BluetoothStateChanged";
@@ -33,12 +35,14 @@ public class BluetoothConstants {
     public static final String[] DATA = {
             "NOTIFY_EVENT",
             "NOTIFY_LINEWIDTH",
-            "NOTIFY_CLEAR"
+            "NOTIFY_CLEAR",
+            "NOTIFY_MAPDATA"
     };
 
     public static final String NOTIFY_EVENT = "NOTIFY_EVENT";
     public static final String NOTIFY_LINEWIDTH = "NOTIFY_LINEWIDTH";
     public static final String NOTIFY_CLEAR = "NOTIFY_CLEAR";
+    public static final String NOTIFY_MAPDATA = "NOTIFY_MAPDATA";
 
     // Requests:
     public static final String[] REQUESTS = {   "REQUEST_ESTABLISHED_CONNECTION",

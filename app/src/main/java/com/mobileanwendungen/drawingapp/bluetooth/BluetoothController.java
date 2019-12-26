@@ -85,6 +85,7 @@ public class BluetoothController {
             onBluetoothOn();
         }
         isRunning = true;
+        pause = false;
     }
 
     public void onBluetoothOn() {

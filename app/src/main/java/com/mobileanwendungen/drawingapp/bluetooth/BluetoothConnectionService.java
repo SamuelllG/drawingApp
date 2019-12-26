@@ -193,11 +193,11 @@ public class BluetoothConnectionService extends Thread {
             r = connectedThread;
         }
         if (r != null) {
-            // Perform the write unsynchronized
+            // Perform the sendEvent unsynchronized
             r.write(out);
             //Log.d(TAG, "wrote something");
         } else {
-            Log.d(TAG, " ERROR: connectedThread was closed before write");
+            Log.d(TAG, " ERROR: connectedThread was closed before sendEvent");
         }
     }
 

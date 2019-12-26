@@ -16,6 +16,7 @@ import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SerializablePath extends Path implements Serializable {
+    private static final long serialVersionUID = 422910382351392014L;
 
     @JsonProperty("actions")
     private List<Action> actions = new LinkedList<>();

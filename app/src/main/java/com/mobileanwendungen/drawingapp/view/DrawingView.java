@@ -184,7 +184,7 @@ public class DrawingView extends View {
     }
 
     /**
-     * Touch ended --> write everything to a persistent canvas
+     * Touch ended --> sendEvent everything to a persistent canvas
      */
     private void touchEnded(int pointerId, int user) {
         Path path = pathMap[user].get(pointerId); // get corresponding path
@@ -226,7 +226,7 @@ public class DrawingView extends View {
     public void setPathMap(HashMap<Integer, SerializablePath> map, int user) {
         pathMap[user] = map;
         //pathMap[user].get(0).recreate();
-        previousPointMap[0].put(0, new Point());
+        previousPointMap[user].put(0, new Point());
         //drawAll(user);
         invalidate();
     }
