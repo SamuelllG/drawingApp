@@ -183,10 +183,4 @@ public class RemoteHandler {
     public void clearRemote() {
         drawingView.clear(1, 0);
     }
-
-    // TODO: clean that shit up and look what is real drawing
-
-    // TODO: BUG AFTER PAIRING on remote device --> doesnt get shown as paired
-    // TODO: line width
-
 }

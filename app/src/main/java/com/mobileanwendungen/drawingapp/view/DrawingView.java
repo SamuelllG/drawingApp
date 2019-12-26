@@ -1,5 +1,6 @@
 package com.mobileanwendungen.drawingapp.view;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -16,7 +17,10 @@ import android.view.View;
 import androidx.annotation.Nullable;
 
 import com.mobileanwendungen.drawingapp.CustomMotionEvent;
+import com.mobileanwendungen.drawingapp.DrawingController;
+import com.mobileanwendungen.drawingapp.MainActivity;
 import com.mobileanwendungen.drawingapp.bluetooth.RemoteHandler;
+import com.mobileanwendungen.drawingapp.bluetooth.Threads.RefresherThread;
 import com.mobileanwendungen.drawingapp.utilities.PathPaint;
 import com.mobileanwendungen.drawingapp.utilities.SerializablePath;
 
@@ -25,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class DrawingView extends View {
 
@@ -46,8 +51,6 @@ public class DrawingView extends View {
         super(context, attrs);
         init();
     }
-
-    //TODO: understand DrawingView and create DrawingController?
 
     private void init() {
         paintScreen = new Paint();
@@ -105,11 +108,13 @@ public class DrawingView extends View {
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_UP) {
             touchStarted(event.getX(actionIndex), event.getY(actionIndex),0);
         } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP){
-            isDrawing[0] = false;
-        } else {
+            touchEnded(0);
+        } else if (action == MotionEvent.ACTION_MOVE){
             float newX = event.getX(0);
             float newY = event.getY(0);
             touchMoved(newX, newY, 0);
+        } else {
+            return true;
         }
 
         invalidate(); // redraw screen
@@ -122,7 +127,6 @@ public class DrawingView extends View {
 
     public boolean onRemoteTouchEvent(CustomMotionEvent event) {
         int action = event.getAction();
-        //int actionIndex = event.getActionIndex();
 
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_UP) {
             touchStarted(event.getX(), event.getY(),1);
@@ -163,6 +167,13 @@ public class DrawingView extends View {
         }
     }
 
+    private void touchEnded(int user) {
+        isDrawing[user] = false;
+        // draw whole path again, then refresh view again --> bug fix quick drawing
+        drawCurrent(user);
+        invalidate();
+    }
+
     public void setDrawingColor(int user, int color) {
         paintLine[user].setColor(color);
     }
@@ -185,11 +196,15 @@ public class DrawingView extends View {
         drawAll(keep);
     }
 
-    private void drawAll(int user) {
+    public void drawAll(int user) {
+        if (paths[user].size() == 0)
+            return;
         for (SerializablePath path : paths[user]) {
             bitmapCanvas.drawPath(path, path.getPaint());
         }
-        invalidate();
+
+        if (mainActivity != null)
+            mainActivity.runOnUiThread(() -> { invalidate(); });
     }
 
     public void setPathMap(List<SerializablePath> paths, int user) {

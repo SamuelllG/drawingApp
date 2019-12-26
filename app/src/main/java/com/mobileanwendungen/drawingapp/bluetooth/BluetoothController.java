@@ -80,6 +80,10 @@ public class BluetoothController {
         IntentFilter BTIntent = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         bluetoothActivity.registerReceiver(stateChangedBroadcastReceiver, BTIntent);
 
+        // register so bonding is possible remotely (without click on this device, but just click on other device)
+        IntentFilter filter = new IntentFilter((BluetoothDevice.ACTION_BOND_STATE_CHANGED));
+        bluetoothActivity.registerReceiver(bondStateChangedBroadcastReceiver, filter);
+
         // if bluetooth is already on when entering the bluetooth activity
         if (bluetoothAdapter.isEnabled()) {
             onBluetoothOn();

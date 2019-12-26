@@ -19,6 +19,7 @@ import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConnectionService;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothConstants;
 import com.mobileanwendungen.drawingapp.bluetooth.BluetoothController;
 import com.mobileanwendungen.drawingapp.bluetooth.RemoteHandler;
+import com.mobileanwendungen.drawingapp.bluetooth.Threads.AcceptThread;
 import com.mobileanwendungen.drawingapp.utilities.PathsData;
 import com.mobileanwendungen.drawingapp.utilities.SerializablePath;
 import com.mobileanwendungen.drawingapp.utilities.WidthSeekBarChangeListener;
