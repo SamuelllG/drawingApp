@@ -202,9 +202,7 @@ public class DrawingView extends View {
         for (SerializablePath path : paths[user]) {
             bitmapCanvas.drawPath(path, path.getPaint());
         }
-
-        if (mainActivity != null)
-            mainActivity.runOnUiThread(() -> { invalidate(); });
+        invalidate();
     }
 
     public void setPathMap(List<SerializablePath> paths, int user) {
