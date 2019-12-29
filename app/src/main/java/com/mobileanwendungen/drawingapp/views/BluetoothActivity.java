@@ -70,14 +70,14 @@ public class BluetoothActivity extends AppCompatActivity {
     public void onConnectToggle(View view) {
         View item = (View) view.getParent();
         TextView textView = item.findViewById(R.id.tvDeviceAddress);
-        String deviceAdress = (String) textView.getText();
+        String deviceAddress = (String) textView.getText();
 
         Button button = view.findViewById(R.id.connectButton);
         String connectString = getResources().getString(R.string.connectButton);
         boolean shouldConnect = button.getText().equals(connectString);
         if (shouldConnect) {
             Log.d(TAG, "onClick: \"Connect\" start connection");
-            bluetoothController.startConnection(deviceAdress);
+            bluetoothController.startConnection(deviceAddress);
         } else {
             // should disconnect
             Log.d(TAG, "onClick: \"Disconnect\" terminate connection");

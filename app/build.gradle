@@ -41,6 +41,11 @@ dependencies {
     testImplementation 'org.powermock:powermock-module-junit4:1.6.2'
     testImplementation 'org.easymock:easymock:3.3.1'
     testImplementation 'org.powermock:powermock-api-easymock:1.6.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-intents:3.2.0'
+    androidTestImplementation 'com.android.support.test:rules:1.0.2'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+
 /*
     // Required -- JUnit 4 framework
     testImplementation 'junit:junit:4.12'

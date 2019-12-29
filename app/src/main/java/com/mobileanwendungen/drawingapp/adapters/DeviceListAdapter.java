@@ -36,7 +36,7 @@ public class DeviceListAdapter extends ArrayAdapter<BluetoothDevice> {
             TextView deviceName = (TextView) convertView.findViewById(R.id.tvDeviceName);
             TextView deviceAdress = (TextView) convertView.findViewById(R.id.tvDeviceAddress);
             TextView bonded = (TextView) convertView.findViewById(R.id.deviceBonded);
-            TextView connected = (TextView) convertView.findViewById(R.id.deviceConnected);
+            TextView connected = (TextView) convertView.findViewById(R.id.deviceStatus);
             Button connectButton = (Button) convertView.findViewById(R.id.connectButton);
 
             if (deviceName != null) {

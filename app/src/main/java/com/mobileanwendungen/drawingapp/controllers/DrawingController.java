@@ -64,7 +64,7 @@ public class DrawingController {
 
     public void showLineWidthDialog() {
         AlertDialog.Builder currentDialogBuilder = new AlertDialog.Builder(activity);
-        View view = activity.getLayoutInflater().inflate(R.layout.width_dialog, null);
+        View view = activity.getLayoutInflater().inflate(R.layout.width_dialog, null); // <----- BAD! BAD! BAD!
         SeekBar widthSeekBar = view.findViewById(R.id.widthSeekBar);
         //Button setLineWidthButton = view.findViewById(R.id.widthDialogButton);
         widthSeekBar.setOnSeekBarChangeListener(widthSeekBarChangeListener);
