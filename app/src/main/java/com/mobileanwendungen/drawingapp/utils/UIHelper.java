@@ -1,5 +1,6 @@
 package com.mobileanwendungen.drawingapp.utils;
 
+import android.util.Log;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -39,8 +40,9 @@ public class UIHelper {
     }
 
     public void makeToast(int textId, int duration) {
+        Log.d(TAG, "making toast");
         bluetoothActivity.runOnUiThread(() -> {
-            Toast.makeText(bluetoothActivity, textId, duration);
+            Toast.makeText(bluetoothActivity, textId, duration).show();
         });
     }
 

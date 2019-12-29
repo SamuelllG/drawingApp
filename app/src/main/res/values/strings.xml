@@ -31,4 +31,5 @@
     <string name="loaded">Loaded</string>
     <string name="error_loading">Error! Could not be loaded</string>
     <string name="saved">Saved</string>
+    <string name="no_file">No file available</string>
 </resources>

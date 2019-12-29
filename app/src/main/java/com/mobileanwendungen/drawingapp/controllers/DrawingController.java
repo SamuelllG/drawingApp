@@ -162,7 +162,13 @@ public class DrawingController {
         try {
             Log.d(TAG, "loadFromStorage: load from " + storagePath);
             File stored = new File(storagePath, fileName);
-            String filePath = storagePath + "/" + fileName;
+            //String filePath = storagePath + "/" + fileName;
+            if (!stored.exists() && stored.length() < 1) {
+                Toast.makeText(activity, R.string.no_file, Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "no file");
+                return;
+            }
+
 
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -194,10 +200,10 @@ public class DrawingController {
             //Bitmap b = BitmapFactory.decodeStream(new FileInputStream(f));
             //drawingView.setBitmap(b);
             Log.d(TAG, json);
-            Toast.makeText(activity, R.string.loaded, Toast.LENGTH_LONG).show();
+            Toast.makeText(activity, R.string.loaded, Toast.LENGTH_SHORT).show();
 
         } catch (Exception e) {
-            Toast.makeText(activity, R.string.error_loading, Toast.LENGTH_LONG).show();
+            Toast.makeText(activity, R.string.error_loading, Toast.LENGTH_SHORT).show();
             e.printStackTrace();
         }
     }

@@ -134,7 +134,7 @@ public class BluetoothConnectionService extends Thread {
                 break;
             case STATE_UNABLE_TO_CONNECT:
                 Log.d(TAG, "other device is not available");
-                uiHelper.makeToast(R.string.unable_to_connect, Toast.LENGTH_LONG);
+                uiHelper.makeToast(R.string.unable_to_connect, Toast.LENGTH_SHORT);
                 // do nothing, keep listening
                 setState(STATE_LISTEN);
                 break;
@@ -292,7 +292,7 @@ public class BluetoothConnectionService extends Thread {
             // should only try once
             Log.d(TAG, "no remote device");
             //connection failed, try again
-            uiHelper.makeToast(R.string.restart_failed, Toast.LENGTH_LONG);
+            uiHelper.makeToast(R.string.restart_failed, Toast.LENGTH_SHORT);
             setState(STATE_CLOSING);
         }
     }
