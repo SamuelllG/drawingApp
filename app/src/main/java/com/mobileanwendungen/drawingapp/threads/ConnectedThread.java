@@ -54,11 +54,13 @@ public class ConnectedThread extends Thread {
 
         while (bluetoothController.getBluetoothConnectionService().getConnectionState() == BluetoothConstants.STATE_CONNECTED ||
                 bluetoothController.getBluetoothConnectionService().getConnectionState() == BluetoothConstants.STATE_VERIFICATION ||
+                bluetoothController.getBluetoothConnectionService().getConnectionState() == BluetoothConstants.STATE_CLOSE_REQUEST ||
                 bluetoothController.getBluetoothConnectionService().getConnectionState() == BluetoothConstants.STATE_VERIFIED_CONNECTION) {
             try {
                 if (bluetoothController.getBluetoothConnectionService().getConnectionState() == BluetoothConstants.STATE_CONNECTED)
                     bluetoothController.getBluetoothConnectionService().setState(BluetoothConstants.STATE_VERIFICATION);
                 int num = mmInStream.read(buffer, iCount, 1);
+                //Log.d(TAG, "read");
                 if (num != 1)
                     Log.d(TAG, "ERROR: EMPTY READ");
 
@@ -115,6 +117,7 @@ public class ConnectedThread extends Thread {
     public void write(byte[] buffer) {
         // append separator at end of data to prevent that two writes are read as one read
         byte[] bytes = appendSeparator(buffer);
+        //Log.d(TAG, "write this: " + new String(bytes));
         try {
             mmOutStream.write(bytes);
         } catch (IOException e) {

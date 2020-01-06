@@ -127,10 +127,27 @@ public class BluetoothConnectionService extends Thread {
                 Log.d(TAG, "running...");
                 break;
             case STATE_FAILED:
-                Log.d(TAG, "ERROR: FAILED");
-                bluetoothController.getBluetoothDevices().clearConnected();
-                bluetoothController.updateUI();
-                setState(STATE_INIT_RESTART);
+                //Log.d(TAG, "ERROR: FAILED");
+                if (oldState != STATE_FAILED) {
+                    try {
+                        Log.d(TAG, "wait");
+                        Thread.sleep(1000);
+                        Log.d(TAG, "finished");
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    if (mState == STATE_FAILED) {
+                        // if still failed
+                        // on some phones this seems to be necessary for disabling bluetooth
+                        Log.d(TAG, "is still failed");
+                        onStateChanged(STATE_FAILED);
+                    }
+                }
+                else {
+                    bluetoothController.getBluetoothDevices().clearConnected();
+                    bluetoothController.updateUI();
+                    setState(STATE_INIT_RESTART);
+                }
                 break;
             case STATE_UNABLE_TO_CONNECT:
                 Log.d(TAG, "other device is not available");
@@ -177,7 +194,7 @@ public class BluetoothConnectionService extends Thread {
                 initRestart();
                 break;
             default:
-                Log.e(TAG, "STATE NOT FOUND");
+                Log.e(TAG, "STATE NOT FOUND: " + mState);
         }
     }
 
@@ -414,7 +431,7 @@ public class BluetoothConnectionService extends Thread {
                 name = "STATE_FORCE_CLOSE";
                 break;
             default:
-                name = "STATE NOT FOUND";
+                name = "STATE NOT FOUND: " + state;
         }
         Log.d(TAG, "mState = " + name);
         mState = state;
@@ -442,7 +459,11 @@ public class BluetoothConnectionService extends Thread {
 
     public void close() {
         Log.d(TAG, "close");
-        setState(BluetoothConstants.STATE_CLOSING);
+        //setState(BluetoothConstants.STATE_CLOSING);
+        int old = mState;
+        mState = STATE_CLOSING;
+        // unfortunately this is necessary because on some devices the bluetooth adapter is faster disabled than the bcs shut down
+        onStateChanged(old);
         if (timeoutThread != null) {
             //timeoutThread.cancel();
             timeoutThread = null;

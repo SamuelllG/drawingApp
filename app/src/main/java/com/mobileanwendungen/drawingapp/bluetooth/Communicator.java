@@ -44,6 +44,11 @@ public class Communicator {
                 Log.d(TAG, "processRequest: close connection was requested");
                 Log.d(TAG, "processRequest: immediately confirm close connection");
                 bluetoothConnectionService.write(BluetoothConstants.CONFIRM_CLOSE_CONNECTION.getBytes());
+                /*try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }*/
                 bluetoothConnectionService.setState(BluetoothConstants.STATE_CLOSING);
                 break;
             /*case BluetoothConstants.REQUEST_CONNECT:

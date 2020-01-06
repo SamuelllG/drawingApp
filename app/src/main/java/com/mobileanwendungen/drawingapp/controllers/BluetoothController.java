@@ -121,19 +121,14 @@ public class BluetoothController {
             Log.d(TAG, "toggleBluetooth: enabling BT");
             Intent enableBTIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             bluetoothActivity.startActivity(enableBTIntent);
-
-            IntentFilter BTIntent = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-            bluetoothActivity.registerReceiver(stateChangedBroadcastReceiver, BTIntent);
         }
         else {
             Log.d(TAG, "toggleBluetooth: disable bluetooth");
             bluetoothWasDisabled = true;
             bluetoothAdapter.disable();
-
-            IntentFilter BTIntent = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-            bluetoothActivity.registerReceiver(stateChangedBroadcastReceiver, BTIntent);
         }
-
+        IntentFilter BTIntent = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+        bluetoothActivity.registerReceiver(stateChangedBroadcastReceiver, BTIntent);
     }
 
     public void enableDiscoverable() {

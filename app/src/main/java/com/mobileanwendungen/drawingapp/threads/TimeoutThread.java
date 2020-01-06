@@ -33,6 +33,7 @@ public class TimeoutThread extends Thread {
             Log.d(TAG, "no response on request");
             bluetoothConnectionService.setState(BluetoothConstants.STATE_TIMEOUT);
         }
+        Log.d(TAG, "timeout thread finished");
         // else --> do nothing, normal procedure continues
         //Log.d(TAG, "got response");
     }
