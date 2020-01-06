@@ -155,8 +155,10 @@ public class DrawingView extends View {
     }
 
     public void drawAll(int user) {
-        if (paths[user].size() == 0)
+        if (paths[user].size() == 0) {
+            invalidate();
             return;
+        }
         for (SerializablePath path : paths[user]) {
             bitmapCanvas.drawPath(path, path.getPaint());
         }
